@@ -3,7 +3,7 @@ services:
   mtquizbot-container:
     image: client:0.0.1
     build:
-      context: .
+      context: ./QuizBot
       dockerfile: Dockerfile
     ports:
       - "8081:8081"
