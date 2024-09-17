@@ -18,7 +18,7 @@ public class UserRepository implements IUserRepository {
     private static final String SQL_SELECT_LIST = "" +
             "SELECT id, username FROM quizdb.users";
     private static final String SQL_INSERT = "" +
-            "INSERT INTO quizdb.users (username) VALUES (?)";
+            "INSERT INTO quizdb.users (id, username) VALUES (?,?)";
     private static final String SQL_DELETE = "" +
             "DELETE FROM quizdb.users WHERE id = ?";
 
@@ -39,7 +39,9 @@ public class UserRepository implements IUserRepository {
     }
     @Override
     public void insert(User entity) {
-        var result = template.update(SQL_INSERT, entity.getUsername());
+        var result = template.update(SQL_INSERT,
+            entity.getId(),
+            entity.getUsername());
     }
     @Override
     public void delete(User entity){

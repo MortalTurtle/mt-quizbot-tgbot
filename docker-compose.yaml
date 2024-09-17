@@ -24,7 +24,7 @@ services:
     ports:
       - 5432
     volumes:
-          - ./postgresql:/docker-entrypoint-initdb.d
+          - ./postgresql/schemas:/docker-entrypoint-initdb.d
           - ./.pgdata:/var/lib/postgresql/data
     restart: unless-stopped
     networks:
