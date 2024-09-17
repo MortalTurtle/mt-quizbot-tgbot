@@ -1,0 +1,6 @@
+CREATE SCHEMA IF NOT EXISTS quizdb;
+
+CREATE TABLE IF NOT EXISTS quizdb.users(
+    id BIGINT PRIMARY KEY,
+    username VARCHAR(100) NOT NULL
+);
