@@ -14,13 +14,13 @@ public class UserRepository implements IUserRepository {
 
     // constants
     private static final String SQL_SELECT_BY_NAME = "" +
-            "SELECT id, username FROM users WHERE id=?";
+            "SELECT id, username FROM quizdb.users WHERE id=?";
     private static final String SQL_SELECT_LIST = "" +
-            "SELECT id, username FROM users";
+            "SELECT id, username FROM quizdb.users";
     private static final String SQL_INSERT = "" +
-            "INSERT INTO users (username) VALUES (?)";
+            "INSERT INTO quizdb.users (username) VALUES (?)";
     private static final String SQL_DELETE = "" +
-            "DELETE FROM users WHERE id = ?";
+            "DELETE FROM quizdb.users WHERE id = ?";
 
     protected final static UserMapper USER_MAPPER = new UserMapper();
     protected final JdbcTemplate template;

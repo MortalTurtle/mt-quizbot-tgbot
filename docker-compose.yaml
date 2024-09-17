@@ -8,22 +8,28 @@ services:
     ports:
       - "8081:8081"
     depends_on:
-      - service-db
+      - postgres
     environment:
       - SERVER_PORT= 8081
-      - SPRING_DATASOURCE_URL=jdbc:postgresql://service-db/quizdb
+      - SPRING_DATASOURCE_URL=jdbc:postgresql://postgres/quiz_db_1
+    networks:
+      - postgres
 
-  service-db:
+  postgres:
     image: postgres:14.7-alpine
     environment:
+      POSTGRES_DB: quiz_db_1
       POSTGRES_USER: user
       POSTGRES_PASSWORD: 123456789
     ports:
-      - "5432:5432"
+      - 5432
     volumes:
-      - ./sql/tables_init.sql:/docker-entrypoint-initdb.d/tables_init.sql
-      - db-data:/var/lib/postgresql/data
+          - ./postgresql:/docker-entrypoint-initdb.d
+          - ./.pgdata:/var/lib/postgresql/data
     restart: unless-stopped
+    networks:
+      - postgres
 
-volumes:
-  db-data:
+networks:
+    postgres:
+        driver: bridge
