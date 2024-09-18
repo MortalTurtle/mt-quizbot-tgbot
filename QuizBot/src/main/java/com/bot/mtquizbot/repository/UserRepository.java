@@ -14,11 +14,11 @@ public class UserRepository implements IUserRepository {
 
     // constants
     private static final String SQL_SELECT_BY_NAME = "" +
-            "SELECT id, username FROM quizdb.users WHERE id=?";
+            "SELECT * FROM quizdb.users WHERE id=?";
     private static final String SQL_SELECT_LIST = "" +
-            "SELECT id, username FROM quizdb.users";
+            "SELECT * FROM quizdb.users";
     private static final String SQL_INSERT = "" +
-            "INSERT INTO quizdb.users (id, username) VALUES (?,?)";
+            "INSERT INTO quizdb.users (id, username) VALUES (?,?) ON CONFLICT DO NOTHING";
     private static final String SQL_DELETE = "" +
             "DELETE FROM quizdb.users WHERE id = ?";
 

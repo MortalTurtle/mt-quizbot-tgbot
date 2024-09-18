@@ -13,6 +13,10 @@ public class User {
 
     @JsonProperty("username")
     private final String username;
+
+    @JsonProperty("username")
+    private final String group_id;
+
     @Override
     public String toString() { return Long.toString(id); }
 }

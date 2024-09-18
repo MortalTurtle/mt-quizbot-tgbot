@@ -9,7 +9,8 @@ public class UserMapper implements RowMapper<User> {
     public User mapRow(ResultSet rs, int rowNum) throws SQLException {
         var entity = new User(
                 rs.getLong("id"),
-                rs.getString("username")
+                rs.getString("username"),
+                rs.getString("group_id")
         );
         return entity;
     }
