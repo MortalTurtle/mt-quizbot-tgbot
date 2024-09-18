@@ -1,13 +1,14 @@
 package com.bot.mtquizbot.repository;
 
-import com.bot.mtquizbot.models.User;
-import com.bot.mtquizbot.models.mapper.UserMapper;
+import java.util.List;
+
 import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.dao.support.DataAccessUtils;
 import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.stereotype.Repository;
 
-import java.util.List;
+import com.bot.mtquizbot.models.User;
+import com.bot.mtquizbot.models.mapper.UserMapper;
 
 @Repository
 public class UserRepository implements IUserRepository {
@@ -18,7 +19,8 @@ public class UserRepository implements IUserRepository {
     private static final String SQL_SELECT_LIST = "" +
             "SELECT * FROM quizdb.users";
     private static final String SQL_INSERT = "" +
-            "INSERT INTO quizdb.users (id, username) VALUES (?,?) ON CONFLICT DO NOTHING";
+            "INSERT INTO quizdb.users (id, username) VALUES (?,?) " +
+            "ON CONFLICT (id) DO UPDATE SET username = $2";
     private static final String SQL_DELETE = "" +
             "DELETE FROM quizdb.users WHERE id = ?";
 

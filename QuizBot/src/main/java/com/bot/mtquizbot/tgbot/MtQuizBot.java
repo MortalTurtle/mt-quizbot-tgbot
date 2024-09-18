@@ -1,8 +1,4 @@
 package com.bot.mtquizbot.tgbot;
-import com.bot.mtquizbot.models.User;
-import com.bot.mtquizbot.repository.IUserRepository;
-import com.bot.mtquizbot.repository.UserRepository;
-import lombok.Getter;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Component;
 import org.telegram.telegrambots.bots.TelegramLongPollingBot;
@@ -10,7 +6,11 @@ import org.telegram.telegrambots.meta.TelegramBotsApi;
 import org.telegram.telegrambots.meta.api.methods.send.SendMessage;
 import org.telegram.telegrambots.meta.api.objects.Update;
 import org.telegram.telegrambots.meta.exceptions.TelegramApiException;
+
+import com.bot.mtquizbot.models.User;
 import com.bot.mtquizbot.service.UserService;
+
+import lombok.Getter;
 @Component
 @Getter
 public class MtQuizBot extends TelegramLongPollingBot {
@@ -41,8 +41,8 @@ public class MtQuizBot extends TelegramLongPollingBot {
         var msg = update.getMessage();
         var user = msg.getFrom();
         var id = user.getId();
+        userService.insert(new User(id, user.getUserName(), null));
         if (msg.hasText() && msg.getText().equals("/start")) {
-            userService.insert(new User(id, user.getUserName()));
             sendText(user.getId(), userService.getById(id).getUsername());
         }
     }
