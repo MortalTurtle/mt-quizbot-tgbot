@@ -1,8 +1,10 @@
 package com.bot.mtquizbot.models.mapper;
-import org.springframework.jdbc.core.RowMapper;
-import com.bot.mtquizbot.models.User;
 import java.sql.ResultSet;
 import java.sql.SQLException;
+
+import org.springframework.jdbc.core.RowMapper;
+
+import com.bot.mtquizbot.models.User;
 
 public class UserMapper implements RowMapper<User> {
     @Override
