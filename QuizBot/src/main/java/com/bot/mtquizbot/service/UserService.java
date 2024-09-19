@@ -1,12 +1,14 @@
 package com.bot.mtquizbot.service;
 
-import com.bot.mtquizbot.models.User;
-import com.bot.mtquizbot.repository.IUserRepository;
-import lombok.RequiredArgsConstructor;
-import lombok.extern.slf4j.Slf4j;
+import java.util.List;
+
 import org.springframework.stereotype.Service;
 
-import java.util.List;
+import com.bot.mtquizbot.models.User;
+import com.bot.mtquizbot.repository.IUserRepository;
+
+import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 
 @Service
 @Slf4j
@@ -25,9 +27,9 @@ public class UserService extends BaseService {
         log.trace("#### insert() [entity={}]", entity);
         repo.insert(entity);
     }
-    public void delete(User entity) {
-        log.trace("#### delete() [entity={}]", entity);
-        repo.delete(entity);
+    public void updateGroupById(long id, String groupId) {
+        log.trace("#### updateGroup_id() [group_id={}, user_id={}]", id, groupId);
+        repo.updateGroupById(id, groupId);
     }
 
 }

@@ -21,8 +21,8 @@ public class UserRepository implements IUserRepository {
     private static final String SQL_INSERT = "" +
             "INSERT INTO quizdb.users (id, username) VALUES (?,?) " +
             "ON CONFLICT (id) DO UPDATE SET username = $2";
-    private static final String SQL_DELETE = "" +
-            "DELETE FROM quizdb.users WHERE id = ?";
+    private static final String SQL_UPDATE_GROUP = "" +
+            "UPDATE quizdb.users SET group_id = $2 WHERE id = $1";
 
     protected final static UserMapper USER_MAPPER = new UserMapper();
     protected final JdbcTemplate template;
@@ -43,10 +43,12 @@ public class UserRepository implements IUserRepository {
     public void insert(User entity) {
         var result = template.update(SQL_INSERT,
             entity.getId(),
-            entity.getUsername());
+            entity.getUsername()
+        );
     }
+
     @Override
-    public void delete(User entity){
-        var result = template.update(SQL_DELETE, entity.getId());
+    public void updateGroupById(long id, String groupId) {
+        var result = template.update(SQL_UPDATE_GROUP, id, groupId);
     }
 }
