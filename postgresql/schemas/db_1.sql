@@ -37,11 +37,13 @@ CREATE INDEX IF NOT EXISTS idx_by_created_ts ON quizdb.tests(created_ts);
 
 CREATE TABLE IF NOT EXISTS quizdb.question_type(
     id TEXT PRIMARY KEY DEFAULT uuid_generate_v4(),
-    text TEXT NOT NULL,
-    description NOT NULL
+    type TEXT NOT NULL,
+    description TEXT NOT NULL
 );
 
-INSERT INTO quizdb.question_type (text, description) VALUES()
+INSERT INTO quizdb.question_type(type, description) VALUES
+('Choose', 'You have to choose the right answer'),
+('Write', 'You have to write the right answer');
 
 CREATE TABLE IF NOT EXISTS quizdb.test_questions(
     id TEXT PRIMARY KEY DEFAULT uuid_generate_v4(),
