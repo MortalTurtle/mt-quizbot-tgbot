@@ -21,9 +21,9 @@ public class GroupService extends BaseService {
         return repo.getById(id);
     }
     
-    public void insert(TestGroup entity) {
-        log.trace("#### insert() [entity={}]", entity);
-        repo.insert(entity);
+    public TestGroup create(String name, String description) {
+        log.trace("#### create() [name={}, description={}]", name, description);
+        return repo.create(name, description);
     }
 
     public void addUserRole(TestGroup group, User user, Role role) {

@@ -16,7 +16,7 @@ public class GroupRepository implements IGroupRepository {
     private static final String SQL_SELECT_BY_ID = "" + 
         "SELECT * FROM quizdb.groups WHERE id = ?";
     private static final String SQL_INSERT = "" +
-        "INSERT INTO quizdb.groups (id, name, description) VALUES (?, ?, ?)";
+        "INSERT INTO quizdb.groups (name, description) VALUES (?, ?) RETURNING *";
     private static final String SQL_ADD_ROLE = "" +
         "INSERT INTO quizdb.group_users (group_id, user_id, group_role_id) VALUES(?, ?, ?)" +
         "ON CONFLICT(group_id, user_id) DO UPDATE SET group_role_id = $3";
@@ -36,11 +36,10 @@ public class GroupRepository implements IGroupRepository {
     }
 
     @Override
-    public void insert(TestGroup entity) {
-        var result = template.update(SQL_INSERT,
-            entity.getId(), 
-            entity.getName(),
-            entity.getDescription());
+    public TestGroup create(String name, String description) {
+        return DataAccessUtils.singleResult(
+            template.query(SQL_INSERT, mapper, name, description)
+        );
     }
 
     @Override

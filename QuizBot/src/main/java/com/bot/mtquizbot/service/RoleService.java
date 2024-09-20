@@ -5,6 +5,8 @@ import java.util.List;
 import org.springframework.stereotype.Service;
 
 import com.bot.mtquizbot.models.Role;
+import com.bot.mtquizbot.models.TestGroup;
+import com.bot.mtquizbot.models.User;
 import com.bot.mtquizbot.repository.IRoleRepository;
 
 import lombok.RequiredArgsConstructor;
@@ -23,5 +25,10 @@ public class RoleService extends BaseService {
     public List<Role> getRoleList() {
         log.trace("#### getRoleLust() - working");
         return repo.getRoleList();
+    }
+
+    public Role getUserRole(User user, TestGroup group) {
+        log.trace("#### getUserRole() [user={}, group={}]", user, group);
+        return repo.getUserRole(user, group);
     }
 }

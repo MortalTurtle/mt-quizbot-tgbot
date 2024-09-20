@@ -6,7 +6,7 @@ import com.bot.mtquizbot.models.User;
 
 public interface IGroupRepository {
     TestGroup getById(String id);
-    void insert(TestGroup entity);
+    TestGroup create(String name, String descritpion);
     void delete(TestGroup entity);
     void addUserRole(TestGroup group, User user, Role role);
 }

@@ -1,14 +1,13 @@
-/*
- * Click nbfs://nbhost/SystemFileSystem/Templates/Licenses/license-default.txt to change this license
- * Click nbfs://nbhost/SystemFileSystem/Templates/Classes/Interface.java to edit this template
- */
-
 package com.bot.mtquizbot.repository;
 
-/**
- *
- * @author turtle
- */
-public interface IRoleRepository {
+import java.util.List;
 
+import com.bot.mtquizbot.models.Role;
+import com.bot.mtquizbot.models.TestGroup;
+import com.bot.mtquizbot.models.User;
+
+public interface IRoleRepository {
+    Role getById(String id);
+    List<Role> getRoleList();
+    Role getUserRole(User user, TestGroup group);
 }
