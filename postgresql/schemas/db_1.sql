@@ -13,14 +13,20 @@ CREATE TABLE IF NOT EXISTS quizdb.users(
     group_id TEXT
 );
 
-CREATE TABLE IF NOT EXISTS quizdb.group_role(
+CREATE TABLE IF NOT EXISTS quizdb.group_roles(
     id TEXT PRIMARY KEY DEFAULT uuid_generate_v4(),
     name TEXT NOT NULL
 );
 
+INSERT INTO quizdb.group_roles(name) VALUES
+('Owner'),
+('Contributor');
+
 CREATE TABLE IF NOT EXISTS quizdb.group_users(
     group_id TEXT REFERENCES quizdb.groups(id),
-    user_id BIGINT REFERENCES quizdb.users(id)
+    user_id BIGINT REFERENCES quizdb.users(id),
+    group_role_id TEXT REFERENCES quizdb.group_roles(id),
+    UNIQUE(group_id, user_id)
 );
 
 CREATE TABLE IF NOT EXISTS quizdb.tests(

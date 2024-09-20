@@ -2,7 +2,9 @@ package com.bot.mtquizbot.service;
 
 import org.springframework.stereotype.Service;
 
+import com.bot.mtquizbot.models.Role;
 import com.bot.mtquizbot.models.TestGroup;
+import com.bot.mtquizbot.models.User;
 import com.bot.mtquizbot.repository.IGroupRepository;
 
 import lombok.RequiredArgsConstructor;
@@ -22,5 +24,10 @@ public class GroupService extends BaseService {
     public void insert(TestGroup entity) {
         log.trace("#### insert() [entity={}]", entity);
         repo.insert(entity);
+    }
+
+    public void addUserRole(TestGroup group, User user, Role role) {
+        log.trace("#### addRole() [group={}, user={}, role={}]", group, user, role);
+        repo.addUserRole(group, user, role);
     }
 }
