@@ -23,14 +23,10 @@ public class RoleService extends BaseService {
     public RoleService(IRoleRepository repo) {
         this.repo = repo;
     }
-
-    private void ConfigureNameToRoleMap() {
+    private void ConfigureMaps() {
         nameToRole = new HashMap<>();
         nameToRole.put("Owner", GroupRole.Owner);
         nameToRole.put("Contributor", GroupRole.Contributor);
-    }
-
-    private void ConfigureEnumToRoleDbMap() {
         enumToRoleDb = new HashMap<>();
         log.trace("#### getRoleList() - working in constructor");
         var roles = repo.getRoleList();
@@ -45,9 +41,10 @@ public class RoleService extends BaseService {
         log.trace("#### getById() [id={}]", id);
         var role = repo.getById(id);
         if (nameToRole == null)
-            ConfigureNameToRoleMap();
+            ConfigureMaps();
         return nameToRole.get(role.getName());
     }
+    
     public List<RoleDb> getRoleDbList() {
         log.trace("#### getRoleList() - working");
         return repo.getRoleList();
@@ -57,14 +54,14 @@ public class RoleService extends BaseService {
         log.trace("#### getUserRole() [user={}, group={}]", user, group);
         var role = repo.getUserRole(user, group);
         if (nameToRole == null)
-            ConfigureNameToRoleMap();
+            ConfigureMaps();
         return nameToRole.get(role.getName());
     }
 
     public void addUserRole(TestGroup group, User user, GroupRole role) {
         log.trace("#### addRole() [group={}, user={}, role={}]", group, user, role);
         if (enumToRoleDb == null)
-            ConfigureEnumToRoleDbMap();
+            ConfigureMaps();
         repo.addUserRole(group, user, enumToRoleDb.get(role));
     }
 }

@@ -8,6 +8,7 @@ import org.springframework.stereotype.Component;
 import org.telegram.telegrambots.bots.TelegramLongPollingBot;
 import org.telegram.telegrambots.meta.TelegramBotsApi;
 import org.telegram.telegrambots.meta.api.methods.send.SendMessage;
+import org.telegram.telegrambots.meta.api.objects.Message;
 import org.telegram.telegrambots.meta.api.objects.Update;
 import org.telegram.telegrambots.meta.api.objects.replykeyboard.InlineKeyboardMarkup;
 import org.telegram.telegrambots.meta.api.objects.replykeyboard.buttons.InlineKeyboardButton;
@@ -85,11 +86,11 @@ public class MtQuizBot extends TelegramLongPollingBot {
             userService.updateGroupById(id, group.getId());
             roleService.addUserRole(group, userService.getById(id), GroupRole.Owner);
             sendText(id, "Your group: " + 
-                group.getName() + 
-                " - " +
-                group.getDescription() + 
-                "\n Was created, its ID is " + group.getId() + 
-                " Please write it down");
+            group.getName() + 
+            " - " +
+            group.getDescription() + 
+            "\nWas created, its ID is\n" + group.getId() + 
+            "\nPlease write it down");
             infoByUser.get(id).remove("Name");
         });
         actionByCommand.put("/groupinfo", (Update update) -> {
@@ -115,7 +116,7 @@ public class MtQuizBot extends TelegramLongPollingBot {
             .callbackData("/join")
             .build();
             var createButton = InlineKeyboardButton.builder()
-            .text("Join")
+            .text("Create")
             .callbackData("/creategroup")
             .build();
             var menu = InlineKeyboardMarkup.builder()
@@ -163,7 +164,16 @@ public class MtQuizBot extends TelegramLongPollingBot {
 
     @Override
     public void onUpdateReceived(Update update) {
-        var msg = update.getMessage();
+        Message msg;
+        if (update.hasCallbackQuery()) {
+            var callbackData = update.getCallbackQuery();
+            var data = callbackData.getData();
+            msg = new Message();
+            msg.setFrom(callbackData.getFrom());
+            msg.setText(data);
+            update.setMessage(msg);
+        }
+        msg = update.getMessage();
         var user = msg.getFrom();
         var id = user.getId();
         if (!infoByUser.containsKey(id))

@@ -17,7 +17,7 @@ public class GroupRepository implements IGroupRepository {
     private static final String SQL_INSERT = "" +
         "INSERT INTO quizdb.groups (name, description) VALUES (?, ?) RETURNING *";
     private static final String SQL_SELECT_BY_USER = "" +
-        "SELECT groups.id, groups.name, groups.description FROM quizdb.users, quizdb.groups" + 
+        "SELECT groups.id, groups.name, groups.description FROM quizdb.users, quizdb.groups " + 
         "WHERE groups.id = users.group_id AND users.id = ?";
 
     protected final static TestGroupMapper mapper = new TestGroupMapper();
