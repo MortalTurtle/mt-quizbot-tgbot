@@ -5,7 +5,6 @@ import org.springframework.dao.support.DataAccessUtils;
 import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.stereotype.Repository;
 
-import com.bot.mtquizbot.models.Role;
 import com.bot.mtquizbot.models.TestGroup;
 import com.bot.mtquizbot.models.User;
 import com.bot.mtquizbot.models.mapper.TestGroupMapper;
@@ -17,9 +16,9 @@ public class GroupRepository implements IGroupRepository {
         "SELECT * FROM quizdb.groups WHERE id = ?";
     private static final String SQL_INSERT = "" +
         "INSERT INTO quizdb.groups (name, description) VALUES (?, ?) RETURNING *";
-    private static final String SQL_ADD_ROLE = "" +
-        "INSERT INTO quizdb.group_users (group_id, user_id, group_role_id) VALUES(?, ?, ?)" +
-        "ON CONFLICT(group_id, user_id) DO UPDATE SET group_role_id = $3";
+    private static final String SQL_SELECT_BY_USER = "" +
+        "SELECT groups.id, groups.name, groups.description FROM quizdb.users, quizdb.groups " + 
+        "WHERE groups.id = users.group_id AND users.id = ?";
 
     protected final static TestGroupMapper mapper = new TestGroupMapper();
     protected final JdbcTemplate template;
@@ -48,11 +47,9 @@ public class GroupRepository implements IGroupRepository {
     }
 
     @Override
-    public void addUserRole(TestGroup group, User user, Role role) {
-        var result = template.update(SQL_ADD_ROLE,
-        group.getId(),
-        user.getId(),
-        role.getId());
+    public TestGroup getUserGroup(User user) {
+        return DataAccessUtils.singleResult(
+            template.query(SQL_SELECT_BY_USER, mapper, user.getId())
+        );
     }
-
 }

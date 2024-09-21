@@ -1,5 +1,6 @@
 package com.bot.mtquizbot.tgbot;
 import java.util.HashMap;
+import java.util.List;
 import java.util.function.Consumer;
 
 import org.springframework.beans.factory.annotation.Value;
@@ -7,10 +8,14 @@ import org.springframework.stereotype.Component;
 import org.telegram.telegrambots.bots.TelegramLongPollingBot;
 import org.telegram.telegrambots.meta.TelegramBotsApi;
 import org.telegram.telegrambots.meta.api.methods.send.SendMessage;
+import org.telegram.telegrambots.meta.api.objects.Message;
 import org.telegram.telegrambots.meta.api.objects.Update;
+import org.telegram.telegrambots.meta.api.objects.replykeyboard.InlineKeyboardMarkup;
+import org.telegram.telegrambots.meta.api.objects.replykeyboard.buttons.InlineKeyboardButton;
 import org.telegram.telegrambots.meta.exceptions.TelegramApiException;
 
 import com.bot.mtquizbot.models.BotState;
+import com.bot.mtquizbot.models.GroupRole;
 import com.bot.mtquizbot.models.TestGroup;
 import com.bot.mtquizbot.models.User;
 import com.bot.mtquizbot.service.GroupService;
@@ -42,15 +47,12 @@ public class MtQuizBot extends TelegramLongPollingBot {
         this.groupService = groupService;
         this.roleService = roleService;
         actionByBotState.put(BotState.idle, (Update update) -> {
-            var msg = update.getMessage();
-            var user = msg.getFrom();
-            var id = user.getId();
+            var id = update.getMessage().getFrom().getId();
             sendText(id, "Please enter a valid command");
         });
         actionByBotState.put(BotState.waitingForGroupCode, (Update update) -> {
             var msg = update.getMessage();
-            var user = msg.getFrom();
-            var id = user.getId();
+            var id = update.getMessage().getFrom().getId();
             TestGroup group;
             if (msg.hasText()) {
                 group = groupService.getById(msg.getText());
@@ -63,8 +65,7 @@ public class MtQuizBot extends TelegramLongPollingBot {
         });
         actionByBotState.put(BotState.waitingForGroupName, (Update update) -> {
             var msg = update.getMessage();
-            var user = msg.getFrom();
-            var id = user.getId();
+            var id = update.getMessage().getFrom().getId();
             if (!msg.hasText()) {
                 sendText(id, "No text for group name");
                 return;
@@ -75,40 +76,63 @@ public class MtQuizBot extends TelegramLongPollingBot {
         });
         actionByBotState.put(BotState.waitingForGroupDescription, (Update update) -> {
             var msg = update.getMessage();
-            var user = msg.getFrom();
-            var id = user.getId();
+            var id = update.getMessage().getFrom().getId();
             if (!msg.hasText()) {
                 sendText(id, "No text for group description");
                 return;
             }
             botStateByUser.replace(id, BotState.idle);
             var group = groupService.create(infoByUser.get(id).get("Name"), msg.getText());
+            userService.updateGroupById(id, group.getId());
+            roleService.addUserRole(group, userService.getById(id), GroupRole.Owner);
             sendText(id, "Your group: " + 
-                group.getName() + 
-                " - " +
-                group.getDescription() + 
-                "\n Was created, its ID is " + group.getId() + 
-                " Please write it down");
+            group.getName() + 
+            " - " +
+            group.getDescription() + 
+            "\nWas created, its ID is\n" + group.getId() + 
+            "\nPlease write it down");
+            infoByUser.get(id).remove("Name");
+        });
+        actionByCommand.put("/groupinfo", (Update update) -> {
+            var id = update.getMessage().getFrom().getId();
+            var user = userService.getById(id);
+            var group = groupService.getUserGroup(user);
+            if (group == null) {
+                sendText(id, "No group found, please enter /join to enter a group or" +
+                "\n /creategroup to create one");
+                return;
+            }
+            sendText(id, "Your group: " + 
+            group.getName() + 
+            " - " +
+            group.getDescription() + 
+            "\nWas created, its ID is\n" + group.getId() + 
+            "\nPlease write it down");
         });
         actionByCommand.put("/start", (Update update) -> {
-            var msg = update.getMessage();
-            var user = msg.getFrom();
-            var id = user.getId();
-            sendText(id, "" + 
+            var id = update.getMessage().getFrom().getId();
+            var joinButton = InlineKeyboardButton.builder()
+            .text("Join")
+            .callbackData("/join")
+            .build();
+            var createButton = InlineKeyboardButton.builder()
+            .text("Create")
+            .callbackData("/creategroup")
+            .build();
+            var menu = InlineKeyboardMarkup.builder()
+            .keyboardRow(List.of(joinButton,createButton))
+            .build();
+            sendInlineMenu(id, "" + 
             "Welcome to bot, enter command /join to join group " +
-            "\n /creategroup to create one");
+            "\n /creategroup to create one", menu);
         });
         actionByCommand.put("/join", (Update update) -> {
-            var msg = update.getMessage();
-            var user = msg.getFrom();
-            var id = user.getId();
+            var id = update.getMessage().getFrom().getId();
             botStateByUser.replace(id, BotState.waitingForGroupCode);
             sendText(id, "Please enter a group code ");
         });
         actionByCommand.put("/creategroup", (Update update) -> {
-            var msg = update.getMessage();
-            var user = msg.getFrom();
-            var id = user.getId();
+            var id = update.getMessage().getFrom().getId();
             botStateByUser.replace(id, BotState.waitingForGroupName);
             sendText(id, "Please enter a group name");
         });
@@ -125,9 +149,31 @@ public class MtQuizBot extends TelegramLongPollingBot {
             throw new RuntimeException(e);
         }
     }
+
+    public void sendInlineMenu(Long who, String txt, InlineKeyboardMarkup kb){
+        SendMessage sm = SendMessage.builder().chatId(who.toString())
+                .parseMode("HTML").text(txt)
+                .replyMarkup(kb).build();
+    
+        try {
+            execute(sm);
+        } catch (TelegramApiException e) {
+            throw new RuntimeException(e);
+        }
+    }
+
     @Override
     public void onUpdateReceived(Update update) {
-        var msg = update.getMessage();
+        Message msg;
+        if (update.hasCallbackQuery()) {
+            var callbackData = update.getCallbackQuery();
+            var data = callbackData.getData();
+            msg = new Message();
+            msg.setFrom(callbackData.getFrom());
+            msg.setText(data);
+            update.setMessage(msg);
+        }
+        msg = update.getMessage();
         var user = msg.getFrom();
         var id = user.getId();
         if (!infoByUser.containsKey(id))
