@@ -1,5 +1,6 @@
 package com.bot.mtquizbot.tgbot;
 import java.util.HashMap;
+import java.util.List;
 import java.util.function.Consumer;
 
 import org.springframework.beans.factory.annotation.Value;
@@ -8,6 +9,8 @@ import org.telegram.telegrambots.bots.TelegramLongPollingBot;
 import org.telegram.telegrambots.meta.TelegramBotsApi;
 import org.telegram.telegrambots.meta.api.methods.send.SendMessage;
 import org.telegram.telegrambots.meta.api.objects.Update;
+import org.telegram.telegrambots.meta.api.objects.replykeyboard.InlineKeyboardMarkup;
+import org.telegram.telegrambots.meta.api.objects.replykeyboard.buttons.InlineKeyboardButton;
 import org.telegram.telegrambots.meta.exceptions.TelegramApiException;
 
 import com.bot.mtquizbot.models.BotState;
@@ -91,15 +94,36 @@ public class MtQuizBot extends TelegramLongPollingBot {
         });
         actionByCommand.put("/groupinfo", (Update update) -> {
             var id = update.getMessage().getFrom().getId();
-            sendText(id, "" + 
-            "Welcome to bot, enter command /join to join group " +
-            "\n /creategroup to create one");
+            var user = userService.getById(id);
+            var group = groupService.getUserGroup(user);
+            if (group == null) {
+                sendText(id, "No group found, please enter /join to enter a group or" +
+                "\n /creategroup to create one");
+                return;
+            }
+            sendText(id, "Your group: " + 
+            group.getName() + 
+            " - " +
+            group.getDescription() + 
+            "\nWas created, its ID is\n" + group.getId() + 
+            "\nPlease write it down");
         });
         actionByCommand.put("/start", (Update update) -> {
             var id = update.getMessage().getFrom().getId();
-            sendText(id, "" + 
+            var joinButton = InlineKeyboardButton.builder()
+            .text("Join")
+            .callbackData("/join")
+            .build();
+            var createButton = InlineKeyboardButton.builder()
+            .text("Join")
+            .callbackData("/creategroup")
+            .build();
+            var menu = InlineKeyboardMarkup.builder()
+            .keyboardRow(List.of(joinButton,createButton))
+            .build();
+            sendInlineMenu(id, "" + 
             "Welcome to bot, enter command /join to join group " +
-            "\n /creategroup to create one");
+            "\n /creategroup to create one", menu);
         });
         actionByCommand.put("/join", (Update update) -> {
             var id = update.getMessage().getFrom().getId();
@@ -124,6 +148,19 @@ public class MtQuizBot extends TelegramLongPollingBot {
             throw new RuntimeException(e);
         }
     }
+
+    public void sendInlineMenu(Long who, String txt, InlineKeyboardMarkup kb){
+        SendMessage sm = SendMessage.builder().chatId(who.toString())
+                .parseMode("HTML").text(txt)
+                .replyMarkup(kb).build();
+    
+        try {
+            execute(sm);
+        } catch (TelegramApiException e) {
+            throw new RuntimeException(e);
+        }
+    }
+
     @Override
     public void onUpdateReceived(Update update) {
         var msg = update.getMessage();
