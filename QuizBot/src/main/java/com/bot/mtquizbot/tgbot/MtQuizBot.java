@@ -11,6 +11,7 @@ import org.telegram.telegrambots.meta.api.objects.Update;
 import org.telegram.telegrambots.meta.exceptions.TelegramApiException;
 
 import com.bot.mtquizbot.models.BotState;
+import com.bot.mtquizbot.models.GroupRole;
 import com.bot.mtquizbot.models.TestGroup;
 import com.bot.mtquizbot.models.User;
 import com.bot.mtquizbot.service.GroupService;
@@ -79,6 +80,7 @@ public class MtQuizBot extends TelegramLongPollingBot {
             botStateByUser.replace(id, BotState.idle);
             var group = groupService.create(infoByUser.get(id).get("Name"), msg.getText());
             userService.updateGroupById(id, group.getId());
+            roleService.addUserRole(group, userService.getById(id), GroupRole.Owner);
             sendText(id, "Your group: " + 
                 group.getName() + 
                 " - " +
@@ -86,6 +88,12 @@ public class MtQuizBot extends TelegramLongPollingBot {
                 "\n Was created, its ID is " + group.getId() + 
                 " Please write it down");
             infoByUser.get(id).remove("Name");
+        });
+        actionByCommand.put("/groupinfo", (Update update) -> {
+            var id = update.getMessage().getFrom().getId();
+            sendText(id, "" + 
+            "Welcome to bot, enter command /join to join group " +
+            "\n /creategroup to create one");
         });
         actionByCommand.put("/start", (Update update) -> {
             var id = update.getMessage().getFrom().getId();
@@ -100,13 +108,6 @@ public class MtQuizBot extends TelegramLongPollingBot {
         });
         actionByCommand.put("/creategroup", (Update update) -> {
             var id = update.getMessage().getFrom().getId();
-            botStateByUser.replace(id, BotState.waitingForGroupName);
-            sendText(id, "Please enter a group name");
-        });
-        actionByCommand.put("/groupinfo", (Update update) -> {
-            var msg = update.getMessage();
-            var user = msg.getFrom();
-            var id = user.getId();
             botStateByUser.replace(id, BotState.waitingForGroupName);
             sendText(id, "Please enter a group name");
         });

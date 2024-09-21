@@ -6,6 +6,7 @@ import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.stereotype.Repository;
 
 import com.bot.mtquizbot.models.TestGroup;
+import com.bot.mtquizbot.models.User;
 import com.bot.mtquizbot.models.mapper.TestGroupMapper;
 
 @Repository
@@ -15,6 +16,9 @@ public class GroupRepository implements IGroupRepository {
         "SELECT * FROM quizdb.groups WHERE id = ?";
     private static final String SQL_INSERT = "" +
         "INSERT INTO quizdb.groups (name, description) VALUES (?, ?) RETURNING *";
+    private static final String SQL_SELECT_BY_USER = "" +
+        "SELECT groups.id, groups.name, groups.description FROM quizdb.users, quizdb.groups" + 
+        "WHERE groups.id = users.group_id AND users.id = ?";
 
     protected final static TestGroupMapper mapper = new TestGroupMapper();
     protected final JdbcTemplate template;
@@ -40,5 +44,12 @@ public class GroupRepository implements IGroupRepository {
     @Override
     public void delete(TestGroup entity) {
         throw new UnsupportedOperationException("Not supported yet.");
+    }
+
+    @Override
+    public TestGroup getUserGroup(User user) {
+        return DataAccessUtils.singleResult(
+            template.query(SQL_SELECT_BY_USER, mapper, user.getId())
+        );
     }
 }

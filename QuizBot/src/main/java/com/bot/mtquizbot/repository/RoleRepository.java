@@ -7,7 +7,7 @@ import org.springframework.dao.support.DataAccessUtils;
 import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.stereotype.Repository;
 
-import com.bot.mtquizbot.models.Role;
+import com.bot.mtquizbot.models.RoleDb;
 import com.bot.mtquizbot.models.TestGroup;
 import com.bot.mtquizbot.models.User;
 import com.bot.mtquizbot.models.mapper.RoleMapper;
@@ -37,31 +37,29 @@ public class RoleRepository implements IRoleRepository{
     }
 
     @Override
-    public Role getById(String id) {
+    public RoleDb getById(String id) {
         return DataAccessUtils.singleResult(
             template.query(SQL_SELECT_BY_ID, roleMapper, id)
         );
     }
 
     @Override
-    public List<Role> getRoleList() {
+    public List<RoleDb> getRoleList() {
         return template.query(SQL_SELECT_LIST, roleMapper);
     }
 
     @Override
-    public Role getUserRole(User user, TestGroup group) {
+    public RoleDb getUserRole(User user, TestGroup group) {
         return DataAccessUtils.singleResult(
             template.query(SQL_SELECT_BY_USER_GROUP_ID, roleMapper, user.getId(), group.getId())
         );
     }
 
-    
     @Override
-    public void addUserRole(TestGroup group, User user, Role role) {
+    public void addUserRole(TestGroup group, User user, RoleDb role) {
         var result = template.update(SQL_ADD_ROLE,
         group.getId(),
         user.getId(),
         role.getId());
     }
-
 }

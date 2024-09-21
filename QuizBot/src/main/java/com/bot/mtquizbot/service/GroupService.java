@@ -2,7 +2,6 @@ package com.bot.mtquizbot.service;
 
 import org.springframework.stereotype.Service;
 
-import com.bot.mtquizbot.models.Role;
 import com.bot.mtquizbot.models.TestGroup;
 import com.bot.mtquizbot.models.User;
 import com.bot.mtquizbot.repository.IGroupRepository;
@@ -26,8 +25,8 @@ public class GroupService extends BaseService {
         return repo.create(name, description);
     }
 
-    public void addUserRole(TestGroup group, User user, Role role) {
-        log.trace("#### addRole() [group={}, user={}, role={}]", group, user, role);
-        repo.addUserRole(group, user, role);
+    public TestGroup getUserGroup(User user) {
+        log.trace("#### getUserGroup() [user={}]", user);
+        return repo.getUserGroup(user);
     }
 }
