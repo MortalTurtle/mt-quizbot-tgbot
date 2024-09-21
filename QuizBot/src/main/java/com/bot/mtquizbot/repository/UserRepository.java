@@ -22,7 +22,7 @@ public class UserRepository implements IUserRepository {
             "INSERT INTO quizdb.users (id, username) VALUES (?,?) " +
             "ON CONFLICT (id) DO UPDATE SET username = $2";
     private static final String SQL_UPDATE_GROUP = "" +
-            "UPDATE quizdb.users SET group_id = $2 WHERE id = $1";
+            "UPDATE quizdb.users SET group_id = ? WHERE id = ?";
 
     protected final static UserMapper USER_MAPPER = new UserMapper();
     protected final JdbcTemplate template;
@@ -49,6 +49,6 @@ public class UserRepository implements IUserRepository {
 
     @Override
     public void updateGroupById(long id, String groupId) {
-        var result = template.update(SQL_UPDATE_GROUP, id, groupId);
+        var result = template.update(SQL_UPDATE_GROUP, groupId, id);
     }
 }

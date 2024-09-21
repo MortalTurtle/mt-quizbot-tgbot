@@ -10,4 +10,5 @@ public interface IRoleRepository {
     Role getById(String id);
     List<Role> getRoleList();
     Role getUserRole(User user, TestGroup group);
+    void addUserRole(TestGroup group, User user, Role role);
 }

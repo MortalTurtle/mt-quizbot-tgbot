@@ -24,6 +24,11 @@ public class RoleRepository implements IRoleRepository{
 
     private static final String SQL_SELECT_LIST = "" + 
         "SELECT * FROM quizdb.group_roles";
+
+        
+    private static final String SQL_ADD_ROLE = "" +
+        "INSERT INTO quizdb.group_users (group_id, user_id, group_role_id) VALUES(?, ?, ?)" +
+        "ON CONFLICT(group_id, user_id) DO UPDATE SET group_role_id = $3";
     protected final static RoleMapper roleMapper = new RoleMapper();
     protected final JdbcTemplate template;
 
@@ -48,6 +53,15 @@ public class RoleRepository implements IRoleRepository{
         return DataAccessUtils.singleResult(
             template.query(SQL_SELECT_BY_USER_GROUP_ID, roleMapper, user.getId(), group.getId())
         );
+    }
+
+    
+    @Override
+    public void addUserRole(TestGroup group, User user, Role role) {
+        var result = template.update(SQL_ADD_ROLE,
+        group.getId(),
+        user.getId(),
+        role.getId());
     }
 
 }
