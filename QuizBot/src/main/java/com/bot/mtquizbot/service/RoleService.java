@@ -17,15 +17,22 @@ import lombok.extern.slf4j.Slf4j;
 @Slf4j
 public class RoleService extends BaseService {
     protected final IRoleRepository repo;
-    protected final HashMap<String, GroupRole> nameToRole;
-    protected final HashMap<GroupRole, RoleDb> enumToRoleDb;
+
+    private HashMap<String, GroupRole> nameToRole = null;
+    private HashMap<GroupRole, RoleDb> enumToRoleDb = null;
     public RoleService(IRoleRepository repo) {
         this.repo = repo;
+    }
+
+    private void ConfigureNameToRoleMap() {
         nameToRole = new HashMap<>();
-        enumToRoleDb = new HashMap<>();
         nameToRole.put("Owner", GroupRole.Owner);
         nameToRole.put("Contributor", GroupRole.Contributor);
-        log.trace("#### getRoleLust() - working in constructor");
+    }
+
+    private void ConfigureEnumToRoleDbMap() {
+        enumToRoleDb = new HashMap<>();
+        log.trace("#### getRoleList() - working in constructor");
         var roles = repo.getRoleList();
         for (var role : roles)
             enumToRoleDb.put(
@@ -37,21 +44,27 @@ public class RoleService extends BaseService {
     public GroupRole getById(String id) {
         log.trace("#### getById() [id={}]", id);
         var role = repo.getById(id);
+        if (nameToRole == null)
+            ConfigureNameToRoleMap();
         return nameToRole.get(role.getName());
     }
     public List<RoleDb> getRoleDbList() {
-        log.trace("#### getRoleLust() - working");
+        log.trace("#### getRoleList() - working");
         return repo.getRoleList();
     }
 
     public GroupRole getUserRole(User user, TestGroup group) {
         log.trace("#### getUserRole() [user={}, group={}]", user, group);
         var role = repo.getUserRole(user, group);
+        if (nameToRole == null)
+            ConfigureNameToRoleMap();
         return nameToRole.get(role.getName());
     }
 
     public void addUserRole(TestGroup group, User user, GroupRole role) {
         log.trace("#### addRole() [group={}, user={}, role={}]", group, user, role);
+        if (enumToRoleDb == null)
+            ConfigureEnumToRoleDbMap();
         repo.addUserRole(group, user, enumToRoleDb.get(role));
     }
 }
