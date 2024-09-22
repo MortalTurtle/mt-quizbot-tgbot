@@ -1,4 +1,5 @@
 package com.bot.mtquizbot.tgbot;
+import java.lang.reflect.InvocationTargetException;
 import java.util.HashMap;
 import java.util.List;
 import java.util.function.Consumer;
@@ -46,96 +47,7 @@ public class MtQuizBot extends TelegramLongPollingBot {
         this.userService = userService;
         this.groupService = groupService;
         this.roleService = roleService;
-        actionByBotState.put(BotState.idle, (Update update) -> {
-            var id = update.getMessage().getFrom().getId();
-            sendText(id, "Please enter a valid command");
-        });
-        actionByBotState.put(BotState.waitingForGroupCode, (Update update) -> {
-            var msg = update.getMessage();
-            var id = update.getMessage().getFrom().getId();
-            TestGroup group;
-            if (msg.hasText()) {
-                group = groupService.getById(msg.getText());
-                if (group == null) {
-                    sendText(id, "Wrong group code");
-                    return;
-                }
-                userService.updateGroupById(id, group.getId());
-            }
-        });
-        actionByBotState.put(BotState.waitingForGroupName, (Update update) -> {
-            var msg = update.getMessage();
-            var id = update.getMessage().getFrom().getId();
-            if (!msg.hasText()) {
-                sendText(id, "No text for group name");
-                return;
-            }
-            botStateByUser.replace(id, BotState.waitingForGroupDescription);
-            infoByUser.get(id).put("Name", msg.getText());
-            sendText(id, "Please enter group description");
-        });
-        actionByBotState.put(BotState.waitingForGroupDescription, (Update update) -> {
-            var msg = update.getMessage();
-            var id = update.getMessage().getFrom().getId();
-            if (!msg.hasText()) {
-                sendText(id, "No text for group description");
-                return;
-            }
-            botStateByUser.replace(id, BotState.idle);
-            var group = groupService.create(infoByUser.get(id).get("Name"), msg.getText());
-            userService.updateGroupById(id, group.getId());
-            roleService.addUserRole(group, userService.getById(id), GroupRole.Owner);
-            sendText(id, "Your group: " + 
-            group.getName() + 
-            " - " +
-            group.getDescription() + 
-            "\nWas created, its ID is\n" + group.getId() + 
-            "\nPlease write it down");
-            infoByUser.get(id).remove("Name");
-        });
-        actionByCommand.put("/groupinfo", (Update update) -> {
-            var id = update.getMessage().getFrom().getId();
-            var user = userService.getById(id);
-            var group = groupService.getUserGroup(user);
-            if (group == null) {
-                sendText(id, "No group found, please enter /join to enter a group or" +
-                "\n /creategroup to create one");
-                return;
-            }
-            sendText(id, "Your group: " + 
-            group.getName() + 
-            " - " +
-            group.getDescription() + 
-            "\nWas created, its ID is\n" + group.getId() + 
-            "\nPlease write it down");
-        });
-        actionByCommand.put("/start", (Update update) -> {
-            var id = update.getMessage().getFrom().getId();
-            var joinButton = InlineKeyboardButton.builder()
-            .text("Join")
-            .callbackData("/join")
-            .build();
-            var createButton = InlineKeyboardButton.builder()
-            .text("Create")
-            .callbackData("/creategroup")
-            .build();
-            var menu = InlineKeyboardMarkup.builder()
-            .keyboardRow(List.of(joinButton,createButton))
-            .build();
-            sendInlineMenu(id, "" + 
-            "Welcome to bot, enter command /join to join group " +
-            "\n /creategroup to create one", menu);
-        });
-        actionByCommand.put("/join", (Update update) -> {
-            var id = update.getMessage().getFrom().getId();
-            botStateByUser.replace(id, BotState.waitingForGroupCode);
-            sendText(id, "Please enter a group code ");
-        });
-        actionByCommand.put("/creategroup", (Update update) -> {
-            var id = update.getMessage().getFrom().getId();
-            botStateByUser.replace(id, BotState.waitingForGroupName);
-            sendText(id, "Please enter a group name");
-        });
+        RegisterCommands();
         telegramBotsApi.registerBot(this);
     }
 
@@ -186,6 +98,123 @@ public class MtQuizBot extends TelegramLongPollingBot {
             return;
         }
         actionByBotState.get(botStateByUser.get(id)).accept(update);
+    }
+
+    private void RegisterCommands() {
+        var methods = this.getClass().getDeclaredMethods();
+        for (var method : methods) {
+            if (method.isAnnotationPresent(CommandAction.class) && 
+                method.getReturnType().equals(Void.TYPE) &&
+                method.getParameterCount() == 1 &&
+                method.getParameters()[0].getType().equals(Update.class)) {
+                String command = method.getAnnotation(CommandAction.class).value();
+                method.setAccessible(true);
+                actionByCommand.put(command, (Update upd) -> {
+                    try { method.invoke(this,upd); }
+                    catch (IllegalAccessException | InvocationTargetException e) {
+                        throw new RuntimeException(e);
+                    }
+                });
+            }
+        }
+        actionByBotState.put(BotState.idle, (Update update) -> {
+            var id = update.getMessage().getFrom().getId();
+            sendText(id, "Please enter a valid command");
+        });
+        actionByBotState.put(BotState.waitingForGroupCode, (Update update) -> {
+            var msg = update.getMessage();
+            var id = update.getMessage().getFrom().getId();
+            TestGroup group;
+            if (msg.hasText()) {
+                group = groupService.getById(msg.getText());
+                if (group == null) {
+                    sendText(id, "Wrong group code");
+                    return;
+                }
+                userService.updateGroupById(id, group.getId());
+            }
+        });
+        actionByBotState.put(BotState.waitingForGroupName, (Update update) -> {
+            var msg = update.getMessage();
+            var id = update.getMessage().getFrom().getId();
+            if (!msg.hasText()) {
+                sendText(id, "No text for group name");
+                return;
+            }
+            botStateByUser.replace(id, BotState.waitingForGroupDescription);
+            infoByUser.get(id).put("Name", msg.getText());
+            sendText(id, "Please enter group description");
+        });
+        actionByBotState.put(BotState.waitingForGroupDescription, (Update update) -> {
+            var msg = update.getMessage();
+            var id = update.getMessage().getFrom().getId();
+            if (!msg.hasText()) {
+                sendText(id, "No text for group description");
+                return;
+            }
+            botStateByUser.replace(id, BotState.idle);
+            var group = groupService.create(infoByUser.get(id).get("Name"), msg.getText());
+            userService.updateGroupById(id, group.getId());
+            roleService.addUserRole(group, userService.getById(id), GroupRole.Owner);
+            sendText(id, "Your group: " + 
+            group.getName() + 
+            " - " +
+            group.getDescription() + 
+            "\nWas created, its ID is\n" + group.getId() + 
+            "\nPlease write it down");
+            infoByUser.get(id).remove("Name");
+        });
+    }
+
+    @CommandAction("/creategroup")
+    private void CreateGroupCommand(Update update) {
+        var id = update.getMessage().getFrom().getId();
+        botStateByUser.replace(id, BotState.waitingForGroupName);
+        sendText(id, "Please enter a group name");
+    }
+
+    @CommandAction("/join")
+    private void JoinCommand(Update update) {
+        var id = update.getMessage().getFrom().getId();
+        botStateByUser.replace(id, BotState.waitingForGroupCode);
+        sendText(id, "Please enter a group code ");
+    }
+    
+    @CommandAction("/start")
+    private void StartCommand(Update update) {
+        var id = update.getMessage().getFrom().getId();
+        var joinButton = InlineKeyboardButton.builder()
+        .text("Join")
+        .callbackData("/join")
+        .build();
+        var createButton = InlineKeyboardButton.builder()
+        .text("Create")
+        .callbackData("/creategroup")
+        .build();
+        var menu = InlineKeyboardMarkup.builder()
+        .keyboardRow(List.of(joinButton,createButton))
+        .build();
+        sendInlineMenu(id, "" + 
+        "Welcome to bot, enter command /join to join group " +
+        "\n /creategroup to create one", menu);
+    }
+    
+    @CommandAction("/groupinfo")
+    private void GroupInfoCommand(Update update) {
+        var id = update.getMessage().getFrom().getId();
+        var user = userService.getById(id);
+        var group = groupService.getUserGroup(user);
+        if (group == null) {
+            sendText(id, "No group found, please enter /join to enter a group or" +
+            "\n /creategroup to create one");
+            return;
+        }
+        sendText(id, "Your group: " + 
+        group.getName() + 
+        " - " +
+        group.getDescription() + 
+        "\nWas created, its ID is\n" + group.getId() + 
+        "\nPlease write it down");
     }
 
     @Override
