@@ -1,5 +1,6 @@
 package com.bot.mtquizbot.tgbot;
 import java.lang.reflect.InvocationTargetException;
+import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.function.Consumer;
@@ -8,7 +9,11 @@ import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Component;
 import org.telegram.telegrambots.bots.TelegramLongPollingBot;
 import org.telegram.telegrambots.meta.TelegramBotsApi;
+import org.telegram.telegrambots.meta.api.methods.AnswerCallbackQuery;
 import org.telegram.telegrambots.meta.api.methods.send.SendMessage;
+import org.telegram.telegrambots.meta.api.methods.updatingmessages.EditMessageReplyMarkup;
+import org.telegram.telegrambots.meta.api.methods.updatingmessages.EditMessageText;
+import org.telegram.telegrambots.meta.api.objects.CallbackQuery;
 import org.telegram.telegrambots.meta.api.objects.Message;
 import org.telegram.telegrambots.meta.api.objects.Update;
 import org.telegram.telegrambots.meta.api.objects.replykeyboard.InlineKeyboardMarkup;
@@ -21,6 +26,7 @@ import com.bot.mtquizbot.models.TestGroup;
 import com.bot.mtquizbot.models.User;
 import com.bot.mtquizbot.service.GroupService;
 import com.bot.mtquizbot.service.RoleService;
+import com.bot.mtquizbot.service.TestsService;
 import com.bot.mtquizbot.service.UserService;
 
 import lombok.Getter;
@@ -32,21 +38,27 @@ public class MtQuizBot extends TelegramLongPollingBot {
     private final UserService userService;
     private final GroupService groupService;
     private final RoleService roleService;
+    private final TestsService testsService;
     private final HashMap<Long, BotState> botStateByUser = new HashMap<>();
     private final HashMap<BotState, Consumer<Update>> actionByBotState = new HashMap<>();
     private final HashMap<Long, HashMap<String, String>> infoByUser = new HashMap<>();
     private final HashMap<String, Consumer<Update>> actionByCommand = new HashMap<>();
+    private final TgBotCallBack callBack;
+    public final static Integer maxTestButtonsInTestsMenuRow = 4;
     public MtQuizBot(TelegramBotsApi telegramBotsApi,
                      @Value("${telegram.bot.username}") String botUsername,
                      @Value("${telegram.bot.token}") String botToken,
                      UserService userService,
                      GroupService groupService,
-                     RoleService roleService) throws TelegramApiException {
+                     RoleService roleService,
+                     TestsService testsService) throws TelegramApiException {
         this.botUsername = botUsername;
         this.botToken = botToken;
         this.userService = userService;
         this.groupService = groupService;
         this.roleService = roleService;
+        this.testsService = testsService;
+        callBack = new TgBotCallBack(userService, groupService, roleService);
         RegisterCommands();
         telegramBotsApi.registerBot(this);
     }
@@ -62,16 +74,37 @@ public class MtQuizBot extends TelegramLongPollingBot {
         }
     }
 
-    public void sendInlineMenu(Long who, String txt, InlineKeyboardMarkup kb){
+    private void sendInlineMenu(Long who, String txt, InlineKeyboardMarkup kb){
         SendMessage sm = SendMessage.builder().chatId(who.toString())
                 .parseMode("HTML").text(txt)
                 .replyMarkup(kb).build();
-    
         try {
             execute(sm);
         } catch (TelegramApiException e) {
             throw new RuntimeException(e);
         }
+    }
+
+    private void buttonTap(CallbackQuery query) throws TelegramApiException {
+        var user = query.getFrom();
+        var id = user.getId();
+        var msgId = query.getMessage().getMessageId();
+    
+        EditMessageReplyMarkup newKb = EditMessageReplyMarkup.builder()
+                .chatId(id.toString()).messageId(msgId).build();
+        newKb.setReplyMarkup(callBack.GetNewMenu(query));
+
+        var newTxtStr = callBack.GetNewText(query);
+        if (newTxtStr != null) {
+            EditMessageText newTxt = EditMessageText.builder()
+                .chatId(id.toString())
+                .messageId(msgId).text("").build();
+            execute(newTxt);
+        }    
+        AnswerCallbackQuery close = AnswerCallbackQuery.builder()
+                .callbackQueryId(query.getId()).build();
+        execute(close);
+        execute(newKb);
     }
 
     @Override
@@ -80,6 +113,11 @@ public class MtQuizBot extends TelegramLongPollingBot {
         if (update.hasCallbackQuery()) {
             var callbackData = update.getCallbackQuery();
             var data = callbackData.getData();
+            try {
+                buttonTap(callbackData);
+            } catch (TelegramApiException e) {
+                throw new RuntimeException(e);
+            }
             msg = new Message();
             msg.setFrom(callbackData.getFrom());
             msg.setText(data);
@@ -145,6 +183,11 @@ public class MtQuizBot extends TelegramLongPollingBot {
                 sendText(id, "Wrong group code");
                 return;
             }
+            var user = userService.getById(id);
+            var role = roleService.getUserRole(user, group);
+            if (role == null) {
+                roleService.addUserRole(group, user, GroupRole.Participant);
+            }
             userService.updateGroupById(id, group.getId());
         }
     }
@@ -158,7 +201,9 @@ public class MtQuizBot extends TelegramLongPollingBot {
             return;
         }
         botStateByUser.replace(id, BotState.waitingForGroupDescription);
-        infoByUser.get(id).put("Name", msg.getText());
+        if (infoByUser.get(id).containsKey("GROUP_NAME"))
+            infoByUser.get(id).remove("GROUP_NAME");
+        infoByUser.get(id).put("GROUP_NAME", msg.getText());
         sendText(id, "Please enter group description");
     }
 
@@ -171,16 +216,45 @@ public class MtQuizBot extends TelegramLongPollingBot {
             return;
         }
         botStateByUser.replace(id, BotState.idle);
-        var group = groupService.create(infoByUser.get(id).get("Name"), msg.getText());
+        var group = groupService.create(infoByUser.get(id).get("GROUP_NAME"), msg.getText());
         userService.updateGroupById(id, group.getId());
         roleService.addUserRole(group, userService.getById(id), GroupRole.Owner);
-        sendText(id, "Your group: " + 
-        group.getName() + 
-        " - " +
-        group.getDescription() + 
-        "\nWas created, its ID is\n" + group.getId() + 
-        "\nPlease write it down");
-        infoByUser.get(id).remove("Name");
+        actionByCommand.get("/groupinfo").accept(update);
+        infoByUser.get(id).remove("GROUP_NAME");
+    }
+
+    @StateAction(BotState.waitingForTestName)
+    private void BotWaitingForTestName(Update update) {
+        var msg = update.getMessage();
+        var id = msg.getFrom().getId();
+        if (!msg.hasText()) {
+            sendText(id, "No text for test name");
+            return;
+        }
+        if (infoByUser.get(id).containsKey("TEST_NAME"))
+            infoByUser.get(id).remove("TEST_NAME");
+        infoByUser.get(id).put("TEST_NAME", msg.getText());
+        sendText(id, "Please enter a test description");
+        botStateByUser.replace(id, BotState.waitingForTestDescription);
+    }
+
+    @StateAction(BotState.waitingForTestDescription)
+    private void BotWaitingForTestDescription(Update update) {
+        var msg = update.getMessage();
+        var id = msg.getFrom().getId();
+        if (!msg.hasText()) {
+            sendText(id, "No text for test description");
+            return;
+        }
+        var user = userService.getById(id);
+        testsService.create(user,
+            groupService.getUserGroup(user),
+            infoByUser.get(id).get("TEST_NAME"),
+            null,
+            msg.getText()
+        );
+        botStateByUser.replace(id, BotState.idle);
+        sendText(id,"Test created succesefully, go to /tests to add questions to your test");
     }
 
     @CommandAction("/creategroup")
@@ -194,6 +268,9 @@ public class MtQuizBot extends TelegramLongPollingBot {
     private void JoinCommand(Update update) {
         var id = update.getMessage().getFrom().getId();
         botStateByUser.replace(id, BotState.waitingForGroupCode);
+        var group = groupService.getUserGroup(userService.getById(id));
+        if (group != null)
+            sendText(id, "Warning: you will leave your current group");
         sendText(id, "Please enter a group code ");
     }
     
@@ -201,7 +278,7 @@ public class MtQuizBot extends TelegramLongPollingBot {
     private void StartCommand(Update update) {
         var id = update.getMessage().getFrom().getId();
         var joinButton = InlineKeyboardButton.builder()
-        .text("Join")
+        .text("Join👥")
         .callbackData("/join")
         .build();
         var createButton = InlineKeyboardButton.builder()
@@ -226,12 +303,83 @@ public class MtQuizBot extends TelegramLongPollingBot {
             "\n /creategroup to create one");
             return;
         }
-        sendText(id, "Your group: " + 
+        var role = roleService.getUserRole(user, group);
+        var testsButton = InlineKeyboardButton.builder()
+        .text("Tests🔴")
+        .callbackData("/tests")
+        .build();
+        var createTestButton = InlineKeyboardButton.builder()
+        .text("Create test✅")
+        .callbackData("/createtest")
+        .build();
+        var menu = InlineKeyboardMarkup.builder();
+        menu.keyboardRow(List.of(testsButton));
+        if (role == GroupRole.Owner || role == GroupRole.Contributor)
+            menu.keyboardRow(List.of(createTestButton));
+        sendInlineMenu(id, "Your group: " + 
         group.getName() + 
         " - " +
         group.getDescription() + 
         "\nWas created, its ID is\n" + group.getId() + 
-        "\nPlease write it down");
+        "\nPlease write it down",
+        menu.build()
+        );
+    }
+
+    @CommandAction("/tests")
+    private void GetTestsCommand(Update update) {
+        var id = update.getMessage().getFrom().getId();
+        var user = userService.getById(id);
+        var group = groupService.getUserGroup(user);
+        if (group == null) {
+            sendText(id, "No group found, please enter /join to enter a group or" +
+            "\n /creategroup to create one");
+            return;
+        }
+        var tests = testsService.getTestList(group);
+        StringBuilder strB = new StringBuilder();
+        List<InlineKeyboardButton> testButtons = new ArrayList();
+        var menu = InlineKeyboardMarkup.builder();
+        int buttonsInRowleft = maxTestButtonsInTestsMenuRow;
+        int cnt = 0;
+        strB.append("your groups tests:\n");
+        for (var test : tests) {
+            cnt++;
+            strB.append(Integer.toString(cnt) + "): " + test.getName() + " - " + test.getDescription() + "\n");
+            buttonsInRowleft--;
+            testButtons.add(
+                InlineKeyboardButton.builder()
+                .callbackData("/test " + test.getId()).text(Integer.toString(cnt) + "✅")
+                .build()
+            );
+            if (buttonsInRowleft == 0) {
+                menu.keyboardRow(testButtons);
+                testButtons = new ArrayList<>();
+                buttonsInRowleft = maxTestButtonsInTestsMenuRow;
+            }
+        }
+        if (buttonsInRowleft > 0)
+            menu.keyboardRow(testButtons);
+        sendInlineMenu(id, strB.toString(), menu.build());
+    }
+
+    @CommandAction("/createtest")
+    private void CreateTestCommand(Update update) {
+        var id = update.getMessage().getFrom().getId();
+        var user = userService.getById(id);
+        var group = groupService.getUserGroup(user);
+        if (group == null) {
+            sendText(id, "No group found, please enter /join to enter a group or" +
+            "\n /creategroup to create one");
+            return;
+        }
+        var role = roleService.getUserRole(user, group);
+        if (role == GroupRole.Participant) {
+            sendText(id, "You dont have rights to create tests");
+            return;
+        }
+        botStateByUser.replace(id, BotState.waitingForTestName);
+        sendText(id, "Please enter a test name");
     }
 
     @Override

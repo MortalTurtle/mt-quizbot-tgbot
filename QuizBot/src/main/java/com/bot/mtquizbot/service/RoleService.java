@@ -27,8 +27,9 @@ public class RoleService extends BaseService {
         nameToRole = new HashMap<>();
         nameToRole.put("Owner", GroupRole.Owner);
         nameToRole.put("Contributor", GroupRole.Contributor);
+        nameToRole.put("Participant", GroupRole.Participant);
         enumToRoleDb = new HashMap<>();
-        log.trace("#### getRoleList() - working in constructor");
+        log.trace("#### getRoleList() - configuring roledb to role enum maps");
         var roles = repo.getRoleList();
         for (var role : roles)
             enumToRoleDb.put(
