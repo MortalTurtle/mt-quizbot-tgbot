@@ -43,7 +43,6 @@ public class MtQuizBot extends TelegramLongPollingBot {
     private final HashMap<BotState, Consumer<Update>> actionByBotState = new HashMap<>();
     private final HashMap<Long, HashMap<String, String>> infoByUser = new HashMap<>();
     private final HashMap<String, Consumer<Update>> actionByCommand = new HashMap<>();
-    private final TgBotCallBack callBack;
     public final static Integer maxTestButtonsInTestsMenuRow = 4;
     public MtQuizBot(TelegramBotsApi telegramBotsApi,
                      @Value("${telegram.bot.username}") String botUsername,
@@ -58,7 +57,6 @@ public class MtQuizBot extends TelegramLongPollingBot {
         this.groupService = groupService;
         this.roleService = roleService;
         this.testsService = testsService;
-        callBack = new TgBotCallBack(userService, groupService, roleService);
         RegisterCommands();
         telegramBotsApi.registerBot(this);
     }
@@ -85,26 +83,38 @@ public class MtQuizBot extends TelegramLongPollingBot {
         }
     }
 
-    private void buttonTap(CallbackQuery query) throws TelegramApiException {
+    private void buttonTap(CallbackQuery query, String newTxtStr, InlineKeyboardMarkup newMenu) {
         var user = query.getFrom();
         var id = user.getId();
         var msgId = query.getMessage().getMessageId();
     
-        EditMessageReplyMarkup newKb = EditMessageReplyMarkup.builder()
-                .chatId(id.toString()).messageId(msgId).build();
-        newKb.setReplyMarkup(callBack.GetNewMenu(query));
-
-        var newTxtStr = callBack.GetNewText(query);
+        if (newMenu != null) {
+            EditMessageReplyMarkup newKb = EditMessageReplyMarkup.builder()
+                    .chatId(id.toString()).messageId(msgId).build();
+            newKb.setReplyMarkup(newMenu);
+            try {
+                execute(newKb);
+            } catch (TelegramApiException e) {
+                throw new RuntimeException(e);
+            }
+        }
         if (newTxtStr != null) {
             EditMessageText newTxt = EditMessageText.builder()
                 .chatId(id.toString())
-                .messageId(msgId).text("").build();
-            execute(newTxt);
-        }    
+                .messageId(msgId).text(newTxtStr).build();
+            try {
+                execute(newTxt);
+            } catch (TelegramApiException e) {
+                throw new RuntimeException(e);
+            }
+        }
         AnswerCallbackQuery close = AnswerCallbackQuery.builder()
                 .callbackQueryId(query.getId()).build();
-        execute(close);
-        execute(newKb);
+        try {
+            execute(close);
+        } catch (TelegramApiException e) {
+            throw new RuntimeException(e);
+        }
     }
 
     @Override
@@ -113,12 +123,8 @@ public class MtQuizBot extends TelegramLongPollingBot {
         if (update.hasCallbackQuery()) {
             var callbackData = update.getCallbackQuery();
             var data = callbackData.getData();
-            try {
-                buttonTap(callbackData);
-            } catch (TelegramApiException e) {
-                throw new RuntimeException(e);
-            }
             msg = new Message();
+            buttonTap(callbackData, null, null);
             msg.setFrom(callbackData.getFrom());
             msg.setText(data);
             update.setMessage(msg);
@@ -131,9 +137,12 @@ public class MtQuizBot extends TelegramLongPollingBot {
         userService.insert(new User(id, user.getUserName(), null));
         if (!botStateByUser.containsKey(id))
             botStateByUser.put(id, BotState.idle);
-        if (msg.hasText() && actionByCommand.containsKey(msg.getText())) {
-            actionByCommand.get(msg.getText()).accept(update);
-            return;
+        if (msg.hasText()) {
+            var command = msg.getText().split(" ")[0];
+            if (actionByCommand.containsKey(command)) {
+                actionByCommand.get(command).accept(update);
+                return;
+            }
         }
         actionByBotState.get(botStateByUser.get(id)).accept(update);
     }
@@ -168,8 +177,6 @@ public class MtQuizBot extends TelegramLongPollingBot {
 
     @StateAction(BotState.idle)
     private void BotIdle(Update update) {
-        var id = update.getMessage().getFrom().getId();
-        sendText(id, "Please enter a valid command");
     }
 
     @StateAction(BotState.waitingForGroupCode)
@@ -349,7 +356,8 @@ public class MtQuizBot extends TelegramLongPollingBot {
             buttonsInRowleft--;
             testButtons.add(
                 InlineKeyboardButton.builder()
-                .callbackData("/test " + test.getId()).text(Integer.toString(cnt) + "✅")
+                .callbackData("/test " + test.getId())
+                .text(Integer.toString(cnt) + "✅")
                 .build()
             );
             if (buttonsInRowleft == 0) {
@@ -380,6 +388,47 @@ public class MtQuizBot extends TelegramLongPollingBot {
         }
         botStateByUser.replace(id, BotState.waitingForTestName);
         sendText(id, "Please enter a test name");
+    }
+
+    @CommandAction("/test")
+    private void TestMenuCommand(Update update) {
+        if (!update.hasCallbackQuery())
+            return;
+        var query = update.getCallbackQuery();
+        var testId = query.getData().split(" ")[1];
+        var test = testsService.getById(testId);
+        var user = userService.getById(query.getFrom().getId());
+        if (test == null)
+            sendText(user.getId(), "Sorry no such test");
+        var group = groupService.getById(test.getGroup_id());
+        if (!group.getId().equals(user.getGroup_id()))
+            sendText(user.getId(), "You are not a part of this group, sry I guess(");
+        var role = roleService.getUserRole(user, group);
+        var menu = InlineKeyboardMarkup.builder();
+        var startButton = InlineKeyboardButton.builder()
+            .callbackData("/starttest " + test.getId())
+            .text("Start test").build();
+        menu.keyboardRow(List.of(startButton));
+        if (role == GroupRole.Owner ||
+            role == GroupRole.Contributor && test.getOwner_id() == user.getId()) {
+            var editButton = InlineKeyboardButton.builder()
+            .callbackData("/edittest " + test.getId())
+            .text("Edit📝").build();
+            menu.keyboardRow(List.of(editButton));
+        }
+        buttonTap(query,
+            test.getName() + " - " + test.getDescription(),
+            menu.build());
+    }
+
+    @CommandAction("/starttest")
+    private void StartPassingTestMenuCommand(Update update) {
+
+    }
+
+    @CommandAction("/edittest")
+    private void EditTestMenuCommand(Update update) {
+
     }
 
     @Override
