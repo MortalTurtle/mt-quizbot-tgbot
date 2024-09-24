@@ -24,6 +24,7 @@ import com.bot.mtquizbot.models.GroupRole;
 import com.bot.mtquizbot.models.TestGroup;
 import com.bot.mtquizbot.models.User;
 import com.bot.mtquizbot.service.GroupService;
+import com.bot.mtquizbot.service.QuestionService;
 import com.bot.mtquizbot.service.RoleService;
 import com.bot.mtquizbot.service.UserService;
 
@@ -36,6 +37,7 @@ public class MtQuizBot extends TelegramLongPollingBot {
     private final UserService userService;
     private final GroupService groupService;
     private final RoleService roleService;
+    private final QuestionService questionService;
     private final HashMap<Long, BotState> botStateByUser = new HashMap<>();
     private final HashMap<BotState, Consumer<Update>> actionByBotState = new HashMap<>();
     private final HashMap<Long, HashMap<String, String>> infoByUser = new HashMap<>();
@@ -46,12 +48,14 @@ public class MtQuizBot extends TelegramLongPollingBot {
                      @Value("${telegram.bot.token}") String botToken,
                      UserService userService,
                      GroupService groupService,
-                     RoleService roleService) throws TelegramApiException {
+                     RoleService roleService,
+                     QuestionService questionService) throws TelegramApiException {
         this.botUsername = botUsername;
         this.botToken = botToken;
         this.userService = userService;
         this.groupService = groupService;
         this.roleService = roleService;
+        this.questionService = questionService;
         callBack = new TgBotCallBack(userService, groupService, roleService);
         RegisterCommands();
         telegramBotsApi.registerBot(this);

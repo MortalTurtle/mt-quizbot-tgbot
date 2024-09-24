@@ -58,6 +58,7 @@ INSERT INTO quizdb.question_type(type, description) VALUES
 CREATE TABLE IF NOT EXISTS quizdb.test_questions(
     id TEXT PRIMARY KEY DEFAULT uuid_generate_v4(),
     test_id TEXT REFERENCES quizdb.tests(id),
+    type_id TEXT REFERENCES quizdb.question_type(id),
     weight INTEGER NOT NULL,
     text TEXT NOT NULL
 );
