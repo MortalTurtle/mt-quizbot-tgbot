@@ -8,7 +8,11 @@ import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Component;
 import org.telegram.telegrambots.bots.TelegramLongPollingBot;
 import org.telegram.telegrambots.meta.TelegramBotsApi;
+import org.telegram.telegrambots.meta.api.methods.AnswerCallbackQuery;
 import org.telegram.telegrambots.meta.api.methods.send.SendMessage;
+import org.telegram.telegrambots.meta.api.methods.updatingmessages.EditMessageReplyMarkup;
+import org.telegram.telegrambots.meta.api.methods.updatingmessages.EditMessageText;
+import org.telegram.telegrambots.meta.api.objects.CallbackQuery;
 import org.telegram.telegrambots.meta.api.objects.Message;
 import org.telegram.telegrambots.meta.api.objects.Update;
 import org.telegram.telegrambots.meta.api.objects.replykeyboard.InlineKeyboardMarkup;
@@ -36,6 +40,7 @@ public class MtQuizBot extends TelegramLongPollingBot {
     private final HashMap<BotState, Consumer<Update>> actionByBotState = new HashMap<>();
     private final HashMap<Long, HashMap<String, String>> infoByUser = new HashMap<>();
     private final HashMap<String, Consumer<Update>> actionByCommand = new HashMap<>();
+    private final TgBotCallBack callBack;
     public MtQuizBot(TelegramBotsApi telegramBotsApi,
                      @Value("${telegram.bot.username}") String botUsername,
                      @Value("${telegram.bot.token}") String botToken,
@@ -47,6 +52,7 @@ public class MtQuizBot extends TelegramLongPollingBot {
         this.userService = userService;
         this.groupService = groupService;
         this.roleService = roleService;
+        callBack = new TgBotCallBack(userService, groupService, roleService);
         RegisterCommands();
         telegramBotsApi.registerBot(this);
     }
@@ -62,16 +68,37 @@ public class MtQuizBot extends TelegramLongPollingBot {
         }
     }
 
-    public void sendInlineMenu(Long who, String txt, InlineKeyboardMarkup kb){
+    private void sendInlineMenu(Long who, String txt, InlineKeyboardMarkup kb){
         SendMessage sm = SendMessage.builder().chatId(who.toString())
                 .parseMode("HTML").text(txt)
                 .replyMarkup(kb).build();
-    
         try {
             execute(sm);
         } catch (TelegramApiException e) {
             throw new RuntimeException(e);
         }
+    }
+
+    private void buttonTap(CallbackQuery query) throws TelegramApiException {
+        var user = query.getFrom();
+        var id = user.getId();
+        var msgId = query.getMessage().getMessageId();
+    
+        EditMessageReplyMarkup newKb = EditMessageReplyMarkup.builder()
+                .chatId(id.toString()).messageId(msgId).build();
+        newKb.setReplyMarkup(callBack.GetNewMenu(query));
+
+        var newTxtStr = callBack.GetNewText(query);
+        if (newTxtStr != null) {
+            EditMessageText newTxt = EditMessageText.builder()
+                .chatId(id.toString())
+                .messageId(msgId).text("").build();
+            execute(newTxt);
+        }    
+        AnswerCallbackQuery close = AnswerCallbackQuery.builder()
+                .callbackQueryId(query.getId()).build();
+        execute(close);
+        execute(newKb);
     }
 
     @Override
@@ -80,6 +107,11 @@ public class MtQuizBot extends TelegramLongPollingBot {
         if (update.hasCallbackQuery()) {
             var callbackData = update.getCallbackQuery();
             var data = callbackData.getData();
+            try {
+                buttonTap(callbackData);
+            } catch (TelegramApiException e) {
+                throw new RuntimeException(e);
+            }
             msg = new Message();
             msg.setFrom(callbackData.getFrom());
             msg.setText(data);
@@ -145,6 +177,11 @@ public class MtQuizBot extends TelegramLongPollingBot {
                 sendText(id, "Wrong group code");
                 return;
             }
+            var user = userService.getById(id);
+            var role = roleService.getUserRole(user, group);
+            if (role == null) {
+                roleService.addUserRole(group, user, GroupRole.Participant);
+            }
             userService.updateGroupById(id, group.getId());
         }
     }
@@ -158,6 +195,8 @@ public class MtQuizBot extends TelegramLongPollingBot {
             return;
         }
         botStateByUser.replace(id, BotState.waitingForGroupDescription);
+        if (infoByUser.get(id).containsKey("Name"))
+            infoByUser.get(id).remove("Name");
         infoByUser.get(id).put("Name", msg.getText());
         sendText(id, "Please enter group description");
     }
@@ -174,12 +213,7 @@ public class MtQuizBot extends TelegramLongPollingBot {
         var group = groupService.create(infoByUser.get(id).get("Name"), msg.getText());
         userService.updateGroupById(id, group.getId());
         roleService.addUserRole(group, userService.getById(id), GroupRole.Owner);
-        sendText(id, "Your group: " + 
-        group.getName() + 
-        " - " +
-        group.getDescription() + 
-        "\nWas created, its ID is\n" + group.getId() + 
-        "\nPlease write it down");
+        actionByCommand.get("/groupinfo").accept(update);
         infoByUser.get(id).remove("Name");
     }
 
@@ -194,6 +228,9 @@ public class MtQuizBot extends TelegramLongPollingBot {
     private void JoinCommand(Update update) {
         var id = update.getMessage().getFrom().getId();
         botStateByUser.replace(id, BotState.waitingForGroupCode);
+        var group = groupService.getUserGroup(userService.getById(id));
+        if (group != null)
+            sendText(id, "Warning: you will leave your current group");
         sendText(id, "Please enter a group code ");
     }
     
@@ -201,7 +238,7 @@ public class MtQuizBot extends TelegramLongPollingBot {
     private void StartCommand(Update update) {
         var id = update.getMessage().getFrom().getId();
         var joinButton = InlineKeyboardButton.builder()
-        .text("Join")
+        .text("Join👥")
         .callbackData("/join")
         .build();
         var createButton = InlineKeyboardButton.builder()
@@ -226,12 +263,53 @@ public class MtQuizBot extends TelegramLongPollingBot {
             "\n /creategroup to create one");
             return;
         }
-        sendText(id, "Your group: " + 
+        var role = roleService.getUserRole(user, group);
+        var testsButton = InlineKeyboardButton.builder()
+        .text("Tests🔴")
+        .callbackData("/tests")
+        .build();
+        var createTestButton = InlineKeyboardButton.builder()
+        .text("Create test✅")
+        .callbackData("/createtest")
+        .build();
+        var menu = InlineKeyboardMarkup.builder();
+        menu.keyboardRow(List.of(testsButton));
+        if (role == GroupRole.Owner || role == GroupRole.Contributor)
+            menu.keyboardRow(List.of(createTestButton));
+        sendInlineMenu(id, "Your group: " + 
         group.getName() + 
         " - " +
         group.getDescription() + 
         "\nWas created, its ID is\n" + group.getId() + 
-        "\nPlease write it down");
+        "\nPlease write it down",
+        menu.build()
+        );
+    }
+
+    @CommandAction("/tests")
+    private void GetTestsCommand(Update update) {
+        var id = update.getMessage().getFrom().getId();
+        var user = userService.getById(id);
+        var group = groupService.getUserGroup(user);
+        if (group == null) {
+            sendText(id, "No group found, please enter /join to enter a group or" +
+            "\n /creategroup to create one");
+            return;
+        }
+        sendText(id, "In the workshop");
+    }
+
+    @CommandAction("/createtest")
+    private void CreateTestCommand(Update update) {
+        var id = update.getMessage().getFrom().getId();
+        var user = userService.getById(id);
+        var group = groupService.getUserGroup(user);
+        if (group == null) {
+            sendText(id, "No group found, please enter /join to enter a group or" +
+            "\n /creategroup to create one");
+            return;
+        }
+        sendText(id, "In the workshop");
     }
 
     @Override

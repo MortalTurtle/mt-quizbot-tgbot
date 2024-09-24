@@ -23,7 +23,8 @@ CREATE TABLE IF NOT EXISTS quizdb.group_roles(
 
 INSERT INTO quizdb.group_roles(name) VALUES
 ('Owner'),
-('Contributor');
+('Contributor'),
+('Participant');
 
 CREATE TABLE IF NOT EXISTS quizdb.group_users(
     group_id TEXT REFERENCES quizdb.groups(id),
