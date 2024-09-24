@@ -36,9 +36,9 @@ CREATE TABLE IF NOT EXISTS quizdb.group_users(
 CREATE TABLE IF NOT EXISTS quizdb.tests(
     id TEXT PRIMARY KEY DEFAULT uuid_generate_v4(),
     group_id TEXT REFERENCES quizdb.groups(id),
-    owner BIGINT REFERENCES quizdb.users(id),
+    owner_id BIGINT REFERENCES quizdb.users(id),
     name TEXT NOT NULL,
-    min_score INTEGER NOT NULL,
+    min_score INTEGER,
     description TEXT NOT NULL,
     created_ts TIMESTAMP DEFAULT NOW()
 );
@@ -59,7 +59,7 @@ CREATE TABLE IF NOT EXISTS quizdb.test_questions(
     id TEXT PRIMARY KEY DEFAULT uuid_generate_v4(),
     test_id TEXT REFERENCES quizdb.tests(id),
     type_id TEXT REFERENCES quizdb.question_type(id),
-    weight INTEGER NOT NULL,
+    weight INTEGER,
     text TEXT NOT NULL
 );
 
