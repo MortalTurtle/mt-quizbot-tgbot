@@ -72,4 +72,22 @@ public class TestsRepository implements ITestsRepository {
         return template.query(SQL_SELECT_TEST_LIST, TEST_MAPPER, group.getId());
     }
 
+    @Override
+    public void updateTestDescription(Test test, String description) {
+        template.update("UPDATE quizdb.tests SET description = ? WHERE id = ?",
+        description, test.getId());
+    }
+
+    @Override
+    public void updateTestName(Test test, String name) {
+        template.update("UPDATE quizdb.tests SET name = ? WHERE id = ?",
+        name, test.getId());
+    }
+
+    @Override
+    public void updateTestScoreToBeat(Test test, Integer score) {
+        template.update("UPDATE quizdb.tests SET min_score = ? WHERE id = ?",
+        score, test.getId());
+    }
+
 }
