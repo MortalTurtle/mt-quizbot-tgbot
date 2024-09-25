@@ -26,4 +26,4 @@ supported Bot commands -
 
 /starttest [testId] [numOfQuestion] - start taking the test, *
 
-* - called only from inline menu
+(* - called only from inline menu)
