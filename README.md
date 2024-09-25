@@ -18,6 +18,8 @@ supported Bot commands -
 
 /test [testId] - get info on some test, called only from menu
 
-/edittest [testId] [testProperty] - edit test, called only from menu
+/edittest [testId] - get edit test menu, called only from menu
+
+/settestproperty [testId] [Property] - set property, called only frome meny
 
 /starttest [testId] [numOfQuestion] - start taking the test, called only from menu
