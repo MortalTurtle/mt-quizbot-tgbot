@@ -16,10 +16,14 @@ supported Bot commands -
 
 /tests - get list of tests in your current group
 
-/test [testId] - get info on some test, called only from menu
+/test [testId] - get info on some test, *
 
-/edittest [testId] - get edit test menu, called only from menu
+/edittest [testId] - get edit test menu, *
 
-/settestproperty [testId] [Property] - set property, called only frome meny
+/settestproperty [testId] [Property] - set property, *
 
-/starttest [testId] [numOfQuestion] - start taking the test, called only from menu
+/editquestions [testId] get edit questions meny, *
+
+/starttest [testId] [numOfQuestion] - start taking the test, *
+
+* - called only from inline menu
