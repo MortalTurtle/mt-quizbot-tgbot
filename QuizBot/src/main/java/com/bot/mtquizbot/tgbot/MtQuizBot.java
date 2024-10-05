@@ -11,6 +11,7 @@ import org.telegram.telegrambots.bots.TelegramLongPollingBot;
 import org.telegram.telegrambots.meta.TelegramBotsApi;
 import org.telegram.telegrambots.meta.api.methods.AnswerCallbackQuery;
 import org.telegram.telegrambots.meta.api.methods.send.SendMessage;
+import org.telegram.telegrambots.meta.api.methods.updatingmessages.DeleteMessage;
 import org.telegram.telegrambots.meta.api.methods.updatingmessages.EditMessageReplyMarkup;
 import org.telegram.telegrambots.meta.api.methods.updatingmessages.EditMessageText;
 import org.telegram.telegrambots.meta.api.objects.CallbackQuery;
@@ -83,21 +84,28 @@ public class MtQuizBot extends TelegramLongPollingBot {
         }
     }
 
+    private void deleteMsg(Long who, Integer messageId) {
+        var del = DeleteMessage.builder().chatId(who).messageId(messageId).build();
+        try {
+            execute(del);
+        } catch (TelegramApiException e) {
+            throw new RuntimeException(e);
+        }
+    }
+
     private void buttonTap(CallbackQuery query, String newTxtStr, InlineKeyboardMarkup newMenu) {
         var user = query.getFrom();
         var id = user.getId();
         var msgId = query.getMessage().getMessageId();
-    
-        if (newMenu != null) {
-            EditMessageReplyMarkup newKb = EditMessageReplyMarkup.builder()
-                    .chatId(id.toString()).messageId(msgId).build();
-            newKb.setReplyMarkup(newMenu);
-            try {
-                execute(newKb);
-            } catch (TelegramApiException e) {
-                throw new RuntimeException(e);
-            }
+        
+        AnswerCallbackQuery close = AnswerCallbackQuery.builder()
+                .callbackQueryId(query.getId()).build();
+        try {
+            execute(close);
+        } catch (TelegramApiException e) {
+            throw new RuntimeException(e);
         }
+    
         if (newTxtStr != null) {
             EditMessageText newTxt = EditMessageText.builder()
                 .chatId(id.toString())
@@ -108,12 +116,16 @@ public class MtQuizBot extends TelegramLongPollingBot {
                 throw new RuntimeException(e);
             }
         }
-        AnswerCallbackQuery close = AnswerCallbackQuery.builder()
-                .callbackQueryId(query.getId()).build();
-        try {
-            execute(close);
-        } catch (TelegramApiException e) {
-            throw new RuntimeException(e);
+
+        if (newMenu != null) {
+            EditMessageReplyMarkup newKb = EditMessageReplyMarkup.builder()
+                    .chatId(id.toString()).messageId(msgId).build();
+            newKb.setReplyMarkup(newMenu);
+            try {
+                execute(newKb);
+            } catch (TelegramApiException e) {
+                throw new RuntimeException(e);
+            }
         }
     }
 
@@ -264,6 +276,37 @@ public class MtQuizBot extends TelegramLongPollingBot {
         sendText(id,"Test created succesefully, go to /tests to add questions to your test");
     }
 
+    @StateAction(BotState.waitingForNewTestProperty)
+    private void botWaitingForNewProperty(Update update) {
+        var msg = update.getMessage();
+        var id = msg.getFrom().getId();
+        var user = userService.getById(id);
+        if (!msg.hasText()) {
+            sendText(id, "No text");
+            return;
+        }
+        var testId = infoByUser.get(user.getId()).get("TEST_TO_EDIT");
+        var property = infoByUser.get(user.getId()).get("PROPERTY_TO_EDIT");
+        var test = testsService.getById(testId);
+        if (test == null ) {
+            botStateByUser.replace(user.getId(), BotState.idle);
+            sendText(user.getId(), "No test found, try againg :(");
+        }
+        try {
+            testsService.updateTestProperty(test, property , msg.getText());
+        } catch (NumberFormatException e) {
+            sendText(user.getId(), "Oops... Something went wrong, maybe wrong input format?");
+            return;
+        } catch (NoSuchFieldException | IllegalArgumentException ex) {
+            throw new RuntimeException(ex);
+        }
+        var updatedTest = testsService.getById(testId);
+        sendInlineMenu(id,
+            testsService.getTestFullDescription(test) ,
+            testsService.getEditMenu(updatedTest));
+        botStateByUser.replace(user.getId(), BotState.idle);
+    }
+
     @CommandAction("/creategroup")
     private void CreateGroupCommand(Update update) {
         var id = update.getMessage().getFrom().getId();
@@ -285,11 +328,11 @@ public class MtQuizBot extends TelegramLongPollingBot {
     private void StartCommand(Update update) {
         var id = update.getMessage().getFrom().getId();
         var joinButton = InlineKeyboardButton.builder()
-        .text("Join👥")
+        .text("Join 👥")
         .callbackData("/join")
         .build();
         var createButton = InlineKeyboardButton.builder()
-        .text("Create")
+        .text("Create 👤")
         .callbackData("/creategroup")
         .build();
         var menu = InlineKeyboardMarkup.builder()
@@ -312,11 +355,11 @@ public class MtQuizBot extends TelegramLongPollingBot {
         }
         var role = roleService.getUserRole(user, group);
         var testsButton = InlineKeyboardButton.builder()
-        .text("Tests🔴")
+        .text("Tests 🔴")
         .callbackData("/tests")
         .build();
         var createTestButton = InlineKeyboardButton.builder()
-        .text("Create test✅")
+        .text("Create test ✅")
         .callbackData("/createtest")
         .build();
         var menu = InlineKeyboardMarkup.builder();
@@ -398,37 +441,95 @@ public class MtQuizBot extends TelegramLongPollingBot {
         var testId = query.getData().split(" ")[1];
         var test = testsService.getById(testId);
         var user = userService.getById(query.getFrom().getId());
-        if (test == null)
+        if (test == null) {
             sendText(user.getId(), "Sorry no such test");
+            return;
+        }
         var group = groupService.getById(test.getGroup_id());
         if (!group.getId().equals(user.getGroup_id()))
-            sendText(user.getId(), "You are not a part of this group, sry I guess(");
+            sendText(user.getId(), "You are not a part of this group, sry I guess :(");
         var role = roleService.getUserRole(user, group);
         var menu = InlineKeyboardMarkup.builder();
         var startButton = InlineKeyboardButton.builder()
             .callbackData("/starttest " + test.getId())
-            .text("Start test").build();
+            .text("Start test 🎓").build();
         menu.keyboardRow(List.of(startButton));
         if (role == GroupRole.Owner ||
             role == GroupRole.Contributor && test.getOwner_id() == user.getId()) {
             var editButton = InlineKeyboardButton.builder()
             .callbackData("/edittest " + test.getId())
-            .text("Edit📝").build();
+            .text("Edit 📝").build();
             menu.keyboardRow(List.of(editButton));
         }
         buttonTap(query,
-            test.getName() + " - " + test.getDescription(),
+            testsService.getTestFullDescription(test),
             menu.build());
     }
 
     @CommandAction("/starttest")
     private void StartPassingTestMenuCommand(Update update) {
-
+        if (!update.hasCallbackQuery())
+            return;
     }
 
     @CommandAction("/edittest")
     private void EditTestMenuCommand(Update update) {
+        if (!update.hasCallbackQuery())
+            return;
+        var query = update.getCallbackQuery();
+        var args = query.getData().split(" ");
+        var testId = args[1];
+        var test = testsService.getById(testId);
+        var user = userService.getById(query.getFrom().getId());
+        if (test == null) {
+            sendText(user.getId(), "Sorry no such test");
+            return;
+        }
+        var group = groupService.getById(test.getGroup_id());
+        if (!group.getId().equals(user.getGroup_id())) {
+            sendText(user.getId(), "You are not a part of this group, sry I guess :(");
+            return;
+        }
+        var role = roleService.getUserRole(user, group);
+        if (role == GroupRole.Participant ||
+            role == GroupRole.Contributor &&
+            test.getOwner_id() != user.getId()) {
+            sendText(user.getId(), "You have no rights to edit this test, sry I guess :(");
+            return;
+        }
+        buttonTap(query,
+            null,
+            testsService.getEditMenu(test));
+    }
 
+    @CommandAction("/ststfield")
+    private void setTestProperty(Update update) {
+        if (!update.hasCallbackQuery())
+            return;
+        var query = update.getCallbackQuery();
+        var args = query.getData().split(" ");
+        var testId = args[1];
+        var test = testsService.getById(testId);
+        var user = userService.getById(query.getFrom().getId());
+        deleteMsg(user.getId(), query.getMessage().getMessageId());
+        if (test == null) {
+            sendText(user.getId(), "Sorry no such test");
+            return;
+        }
+        var group = groupService.getById(test.getGroup_id());
+        if (!group.getId().equals(user.getGroup_id()))
+            sendText(user.getId(), "You are not a part of this group, sry I guess :(");
+        var role = roleService.getUserRole(user, group);
+        if (role == GroupRole.Participant ||
+            role == GroupRole.Contributor &&
+            test.getOwner_id() != user.getId()) {
+            sendText(user.getId(), "You have no rights to edit this test, sry I guess :(");
+        }
+        var property = args[2];
+        botStateByUser.replace(user.getId(), BotState.waitingForNewTestProperty);
+        infoByUser.get(user.getId()).put("TEST_TO_EDIT", test.getId());
+        infoByUser.get(user.getId()).put("PROPERTY_TO_EDIT", property);
+        sendText(user.getId(), "Please enter new property value");
     }
 
     @Override

@@ -17,4 +17,5 @@ public interface ITestsRepository {
                 String description);
     Test getById(String id);
     List<Test> getTestList(TestGroup group);
+    void updateTest(Test test);
 }
