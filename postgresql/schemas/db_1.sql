@@ -43,7 +43,7 @@ CREATE TABLE IF NOT EXISTS quizdb.tests(
     created_ts TIMESTAMP DEFAULT NOW()
 );
 
-CREATE INDEX IF NOT EXISTS idx_by_created_ts ON quizdb.tests(created_ts);
+CREATE INDEX IF NOT EXISTS idx_by_created_ts_tests ON quizdb.tests(created_ts);
 
 CREATE TABLE IF NOT EXISTS quizdb.question_type(
     id TEXT PRIMARY KEY DEFAULT uuid_generate_v4(),
@@ -64,7 +64,7 @@ CREATE TABLE IF NOT EXISTS quizdb.test_questions(
     created_ts TIMESTAMP DEFAULT NOW()
 );
 
-CREATE INDEX IF NOT EXISTS idx_by_created_ts ON quizdb.test_questions(created_ts);
+CREATE INDEX IF NOT EXISTS idx_by_created_ts_questions ON quizdb.test_questions(created_ts);
 
 CREATE TABLE IF NOT EXISTS quizdb.question_answer(
     question_id TEXT REFERENCES quizdb.test_questions(id),
