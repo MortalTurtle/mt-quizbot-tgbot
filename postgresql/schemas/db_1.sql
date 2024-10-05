@@ -60,8 +60,11 @@ CREATE TABLE IF NOT EXISTS quizdb.test_questions(
     test_id TEXT REFERENCES quizdb.tests(id),
     type_id TEXT REFERENCES quizdb.question_type(id),
     weight INTEGER,
-    text TEXT NOT NULL
+    text TEXT NOT NULL,
+    created_ts TIMESTAMP DEFAULT NOW()
 );
+
+CREATE INDEX IF NOT EXISTS idx_by_created_ts ON quizdb.test_questions(created_ts);
 
 CREATE TABLE IF NOT EXISTS quizdb.question_answer(
     question_id TEXT REFERENCES quizdb.test_questions(id),
