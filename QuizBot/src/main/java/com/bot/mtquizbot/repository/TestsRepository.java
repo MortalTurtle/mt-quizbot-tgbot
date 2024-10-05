@@ -73,21 +73,14 @@ public class TestsRepository implements ITestsRepository {
     }
 
     @Override
-    public void updateTestDescription(Test test, String description) {
-        template.update("UPDATE quizdb.tests SET description = ? WHERE id = ?",
-        description, test.getId());
-    }
-
-    @Override
-    public void updateTestName(Test test, String name) {
-        template.update("UPDATE quizdb.tests SET name = ? WHERE id = ?",
-        name, test.getId());
-    }
-
-    @Override
-    public void updateTestScoreToBeat(Test test, Integer score) {
-        template.update("UPDATE quizdb.tests SET min_score = ? WHERE id = ?",
-        score, test.getId());
+    public void updateTest(Test test) {
+        template.update("" +
+            "UPDATE quizdb.tests SET name = ?, min_score = ?, description = ? WHERE id = ?",
+            test.getName(),
+            test.getMin_score(),
+            test.getDescription(),
+            test.getId()
+        );
     }
 
 }

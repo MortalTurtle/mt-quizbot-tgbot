@@ -285,35 +285,24 @@ public class MtQuizBot extends TelegramLongPollingBot {
             sendText(id, "No text");
             return;
         }
-        if (!infoByUser.get(user.getId()).containsKey("PROPERTY_TO_EDIT") ||
-            !infoByUser.get(user.getId()).containsKey("TEST_TO_EDIT")) {
-            botStateByUser.replace(user.getId(), BotState.idle);
-            sendText(user.getId(), "Ooops... something went wrong");
-        }
         var testId = infoByUser.get(user.getId()).get("TEST_TO_EDIT");
         var property = infoByUser.get(user.getId()).get("PROPERTY_TO_EDIT");
         var test = testsService.getById(testId);
-        if (test == null || !"TEST_MS".equals(property) && 
-                            !"TEST_NAME".equals(property) &&
-                            !"TEST_D".equals(property)) {
+        if (test == null ) {
             botStateByUser.replace(user.getId(), BotState.idle);
-            sendText(user.getId(), "Ooops... something went wrong");
+            sendText(user.getId(), "No test found, try againg :(");
         }
-        if (property.equals("TEST_MS")) {
-            try {
-            testsService.updateTestScoreToBeat(test, Integer.valueOf(msg.getText()));
-            } catch (NumberFormatException e) {
-                sendText(user.getId(), "Wrong format");
-                return;
-            }
+        try {
+            testsService.updateTestProperty(test, property , msg.getText());
+        } catch (NumberFormatException e) {
+            sendText(user.getId(), "Oops... Something went wrong, maybe wrong input format?");
+            return;
+        } catch (NoSuchFieldException | IllegalArgumentException ex) {
+            throw new RuntimeException(ex);
         }
-        if (property.equals("TEST_D"))
-            testsService.updateTestDescription(test, msg.getText());
-        if (property.equals("TEST_NAME"))
-            testsService.updateTestName(test, msg.getText());
         var updatedTest = testsService.getById(testId);
         sendInlineMenu(id,
-            updatedTest.getName() + " - " + updatedTest.getDescription() ,
+            testsService.getTestFullDescription(test) ,
             testsService.getEditMenu(updatedTest));
         botStateByUser.replace(user.getId(), BotState.idle);
     }
@@ -452,8 +441,10 @@ public class MtQuizBot extends TelegramLongPollingBot {
         var testId = query.getData().split(" ")[1];
         var test = testsService.getById(testId);
         var user = userService.getById(query.getFrom().getId());
-        if (test == null)
+        if (test == null) {
             sendText(user.getId(), "Sorry no such test");
+            return;
+        }
         var group = groupService.getById(test.getGroup_id());
         if (!group.getId().equals(user.getGroup_id()))
             sendText(user.getId(), "You are not a part of this group, sry I guess :(");
@@ -471,7 +462,7 @@ public class MtQuizBot extends TelegramLongPollingBot {
             menu.keyboardRow(List.of(editButton));
         }
         buttonTap(query,
-            test.getName() + " - " + test.getDescription(),
+            testsService.getTestFullDescription(test),
             menu.build());
     }
 
@@ -490,8 +481,10 @@ public class MtQuizBot extends TelegramLongPollingBot {
         var testId = args[1];
         var test = testsService.getById(testId);
         var user = userService.getById(query.getFrom().getId());
-        if (test == null)
+        if (test == null) {
             sendText(user.getId(), "Sorry no such test");
+            return;
+        }
         var group = groupService.getById(test.getGroup_id());
         if (!group.getId().equals(user.getGroup_id())) {
             sendText(user.getId(), "You are not a part of this group, sry I guess :(");
@@ -509,7 +502,7 @@ public class MtQuizBot extends TelegramLongPollingBot {
             testsService.getEditMenu(test));
     }
 
-    @CommandAction("/settestproperty")
+    @CommandAction("/ststfield")
     private void setTestProperty(Update update) {
         if (!update.hasCallbackQuery())
             return;
@@ -518,8 +511,11 @@ public class MtQuizBot extends TelegramLongPollingBot {
         var testId = args[1];
         var test = testsService.getById(testId);
         var user = userService.getById(query.getFrom().getId());
-        if (test == null)
+        deleteMsg(user.getId(), query.getMessage().getMessageId());
+        if (test == null) {
             sendText(user.getId(), "Sorry no such test");
+            return;
+        }
         var group = groupService.getById(test.getGroup_id());
         if (!group.getId().equals(user.getGroup_id()))
             sendText(user.getId(), "You are not a part of this group, sry I guess :(");
@@ -529,25 +525,11 @@ public class MtQuizBot extends TelegramLongPollingBot {
             test.getOwner_id() != user.getId()) {
             sendText(user.getId(), "You have no rights to edit this test, sry I guess :(");
         }
-        deleteMsg(user.getId(), query.getMessage().getMessageId());
         var property = args[2];
-        if (!"TEST_NAME".equals(property) && 
-            !"TEST_D".equals(property) && 
-            !"TEST_MS".equals(property)) {
-            sendText(user.getId(), "Something went wrong, no such property");
-        }
-        var msgString = "Please enter new ";
         botStateByUser.replace(user.getId(), BotState.waitingForNewTestProperty);
-        if ("TEST_NAME".equals(property))
-            msgString += "name";
-        if ("TEST_D".equals(property)) 
-            msgString += "Description";
-        if (property.equals("TEST_MS")) 
-            msgString += "min score to beat";
         infoByUser.get(user.getId()).put("TEST_TO_EDIT", test.getId());
         infoByUser.get(user.getId()).put("PROPERTY_TO_EDIT", property);
-        msgString += " for your test";
-        sendText(user.getId(), msgString);
+        sendText(user.getId(), "Please enter new property value");
     }
 
     @Override

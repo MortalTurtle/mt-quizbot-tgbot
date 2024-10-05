@@ -9,30 +9,33 @@ import java.sql.Timestamp;
 
 import com.fasterxml.jackson.annotation.JsonProperty;
 
+import lombok.AllArgsConstructor;
 import lombok.Data;
-import lombok.RequiredArgsConstructor;
 
 @Data
-@RequiredArgsConstructor
+@AllArgsConstructor
 public class Test {
     @JsonProperty("id")
-    private final String id;
+    private String id;
     
     @JsonProperty("group_id")
-    private final String group_id;
+    private String group_id;
     
     @JsonProperty("owner_id")
-    private final Long owner_id;
+    private Long owner_id;
 
+    @CanEditObjectField(getPropertyButtonText="Test name 🎆")
     @JsonProperty("name")
-    private final String name;
+    private String name;
 
+    @CanEditObjectField(getPropertyButtonText="Min score to beat 🥇")
     @JsonProperty("min_score")
-    private final Integer min_score;
+    private Integer min_score;
     
+    @CanEditObjectField(getPropertyButtonText="Description ✏️")
     @JsonProperty("description")
-    private final String description;
+    private String description;
 
     @JsonProperty("created_ts")
-    private final Timestamp created_ts;
+    private Timestamp created_ts;
 }
