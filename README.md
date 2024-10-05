@@ -20,7 +20,7 @@ supported Bot commands -
 
 /edittest [testId] - get edit test menu, *
 
-/settestproperty [testId] [Property] - set property, *
+/ststfield [testId] [Field name] - set test field, *
 
 /editquestions [testId] get edit questions meny, *
 
