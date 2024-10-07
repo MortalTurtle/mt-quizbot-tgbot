@@ -18,7 +18,7 @@ public class TestQuestionRepository {
 
     private static final String SQL_INSERT_QUESTION = 
         "INSERT INTO quizdb.test_questions(type_id, weight, text) " +
-        "VALUES (?, ?, ?, ?) RETURNING *";
+        "VALUES (?, ?, ?) RETURNING *";
 
     private static final String SQL_SELECT_QUESTION_BY_ID = 
         "SELECT * FROM quizdb.test_questions WHERE id = ?";
