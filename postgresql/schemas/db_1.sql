@@ -71,6 +71,11 @@ CREATE TABLE IF NOT EXISTS quizdb.question_answer(
     text TEXT NOT NULL
 );
 
+CREATE TABLE IF NOT EXISTS quizdb.question_false_answers(
+    question_id TEXT REFERENCES quizdb.test_questions(id),
+    text TEXT NOT NULL
+);
+
 CREATE TABLE IF NOT EXISTS quizdb.test_results(
     user_id BIGINT REFERENCES quizdb.users(id),
     test_id TEXT REFERENCES quizdb.tests(id),
