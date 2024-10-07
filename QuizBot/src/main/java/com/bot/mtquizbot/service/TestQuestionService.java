@@ -28,7 +28,7 @@ public class TestQuestionService {
     }
 
     public TestQuestion addQuestion(String typeId, Integer weight, String text) {
-        log.trace("#### addQuestion() [testId={}, typeId={}, weight={}, text={}]",  typeId, weight, text);
+        log.trace("#### addQuestion() [typeId={}, weight={}, text={}]",  typeId, weight, text);
         return testQuestionRepository.addQuestion(typeId, weight, text);
     }
     
