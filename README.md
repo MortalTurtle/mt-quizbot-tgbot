@@ -22,7 +22,11 @@ supported Bot commands -
 
 /ststfield [testId] [Field name] - set test field, *
 
-/editquestions [testId] get edit questions meny, *
+/editquestions [testId] (not required)[offset] get edit questions menu with offset, *
+
+/editquestion [questionId] get edit question menu, *
+
+/addquestion [testId] add question to test, *
 
 /starttest [testId] [numOfQuestion] - start taking the test, *
 
