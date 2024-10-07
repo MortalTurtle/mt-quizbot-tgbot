@@ -9,8 +9,8 @@ import com.bot.mtquizbot.models.TestQuestion;
 
 public class TestQuestionMapper implements RowMapper<TestQuestion> {
     @Override
-    public Test mapRow(ResultSet rs, int rowNum) throws SQLException {
-        var entity = new Test(
+    public TestQuestion mapRow(ResultSet rs, int rowNum) throws SQLException {
+        var entity = new TestQuestion(
                 rs.getString("id"),
                 rs.getString("test_id"),
                 rs.getString("type_id"),

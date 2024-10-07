@@ -8,17 +8,17 @@ import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.stereotype.Repository;
 
 import com.bot.mtquizbot.models.TestQuestion;
-import com.bot.mtquizbot.models.mapper.TestQuestionMapper; 
+import com.bot.mtquizbot.models.mapper.TestQuestionMapper;
 
 @Repository
-public class TestQuestionRepository {
+public class TestQuestionRepository implements ITestQuestionRepository {
 
     private static final String SQL_SELECT_QUESTIONS_BY_TEST_ID = 
-        "SELECT * FROM quizdb.test_questions WHERE test_id = ? ORDER BY created_ts";
+        "SELECT * FROM quizdb.test_questions WHERE test_id = ? ORDER BY created_ts LIMIT ? OFFSET ?";
 
     private static final String SQL_INSERT_QUESTION = 
-        "INSERT INTO quizdb.test_questions(type_id, weight, text) " +
-        "VALUES (?, ?, ?) RETURNING *";
+        "INSERT INTO quizdb.test_questions(test_id, type_id, weight, text) " +
+        "VALUES (?, ?, ?, ?) RETURNING *";
 
     private static final String SQL_SELECT_QUESTION_BY_ID = 
         "SELECT * FROM quizdb.test_questions WHERE id = ?";
@@ -30,19 +30,22 @@ public class TestQuestionRepository {
         this.template = template;
     }
 
-    public List<TestQuestion> getQuestionsByTestId(String testId) {
-        return template.query(SQL_SELECT_QUESTIONS_BY_TEST_ID, TEST_QUESTIONS_MAPPER, testId);
+    @Override
+    public List<TestQuestion> getQuestionsByTestId(String testId, int offset, int count) {
+        return template.query(SQL_SELECT_QUESTIONS_BY_TEST_ID, TEST_QUESTIONS_MAPPER, testId, count, offset);
     }
 
+    @Override
     public TestQuestion getQuestionById(String questionId) {
         return DataAccessUtils.singleResult(
             template.query(SQL_SELECT_QUESTION_BY_ID, TEST_QUESTIONS_MAPPER, questionId)
         );
     }
 
-    public TestQuestion addQuestion(String typeId, Integer weight, String text) {
+    @Override
+    public TestQuestion addQuestion(String testId ,String typeId, Integer weight, String text) {
         return DataAccessUtils.singleResult(
-            template.query(SQL_INSERT_QUESTION, TEST_QUESTIONS_MAPPER, typeId, weight, text)
+            template.query(SQL_INSERT_QUESTION, TEST_QUESTIONS_MAPPER, testId, typeId, weight, text)
         );
     }
 }

@@ -13,7 +13,8 @@ public class QuestionTypeMapper implements RowMapper<QuestionType> {
     public QuestionType mapRow(ResultSet rs, int rowNum) throws SQLException {
         var entity = new QuestionType(
                 rs.getString("id"),
-                rs.getString("type")
+                rs.getString("type"),
+                rs.getString("description")
         );
         return entity;
     }

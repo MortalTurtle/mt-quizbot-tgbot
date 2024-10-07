@@ -14,4 +14,7 @@ public class QuestionType {
 
     @JsonProperty("type")
     private final String type;
+
+    @JsonProperty("description")
+    private final String description;
 }

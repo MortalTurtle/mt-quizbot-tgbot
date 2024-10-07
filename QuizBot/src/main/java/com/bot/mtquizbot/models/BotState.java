@@ -7,5 +7,6 @@ public enum BotState {
     waitingForGroupDescription,
     waitingForTestName,
     waitingForTestDescription,
-    waitingForNewTestProperty
+    waitingForNewTestProperty,
+    waitingForQuestionText
 }
