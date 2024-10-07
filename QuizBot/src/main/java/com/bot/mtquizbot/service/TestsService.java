@@ -1,10 +1,12 @@
 package com.bot.mtquizbot.service;
 
 
+import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.function.Function;
 
+import org.glassfish.grizzly.utils.Pair;
 import org.springframework.stereotype.Service;
 import org.telegram.telegrambots.meta.api.objects.replykeyboard.InlineKeyboardMarkup;
 import org.telegram.telegrambots.meta.api.objects.replykeyboard.buttons.InlineKeyboardButton;
@@ -22,7 +24,7 @@ import lombok.extern.slf4j.Slf4j;
 @Slf4j
 public class TestsService extends BaseService {
     protected final ITestsRepository repo;
-    private HashMap<Class<?>, Function<String, Object>> convertStringValueToSomeClass = new HashMap<>();
+    private final HashMap<Class<?>, Function<String, Object>> convertStringValueToSomeClass = new HashMap<>();
 
     public TestsService(ITestsRepository repo) {
         this.repo = repo;
@@ -78,7 +80,40 @@ public class TestsService extends BaseService {
                 ));
             }
         }
+        var backButton = InlineKeyboardButton.builder().callbackData("/backtotests").text("Back 🚫").build();
+        menu.keyboardRow(List.of(backButton));
         return menu.build();
+    }
+
+    public Pair<InlineKeyboardMarkup, String> getGroupTestsMenuWithDescription(TestGroup group, Integer maxTestButtonsInTestsMenuRow) {
+        var tests = getTestList(group);
+        StringBuilder strB = new StringBuilder();
+        List<InlineKeyboardButton> testButtons = new ArrayList();
+        var menu = InlineKeyboardMarkup.builder();
+        int buttonsInRowleft = maxTestButtonsInTestsMenuRow;
+        int cnt = 0;
+        strB.append("your groups tests:\n");
+        for (var test : tests) {
+            cnt++;
+            strB.append(Integer.toString(cnt) + "): " + 
+            test.getName() + " - " + 
+            test.getDescription() + "\n");
+            buttonsInRowleft--;
+            testButtons.add(
+                InlineKeyboardButton.builder()
+                .callbackData("/test " + test.getId())
+                .text(Integer.toString(cnt) + "✅")
+                .build()
+            );
+            if (buttonsInRowleft == 0) {
+                menu.keyboardRow(testButtons);
+                testButtons = new ArrayList<>();
+                buttonsInRowleft = maxTestButtonsInTestsMenuRow;
+            }
+        }
+        if (buttonsInRowleft > 0)
+            menu.keyboardRow(testButtons);
+        return new Pair(menu.build(), strB.toString());
     }
 
     public void updateTestProperty(Test test, String propertyName, String strVal) throws NoSuchFieldException,

@@ -1,6 +1,5 @@
 package com.bot.mtquizbot.tgbot;
 import java.lang.reflect.InvocationTargetException;
-import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.function.Consumer;
@@ -327,6 +326,13 @@ public class MtQuizBot extends TelegramLongPollingBot {
     @CommandAction("/start")
     private void StartCommand(Update update) {
         var id = update.getMessage().getFrom().getId();
+        var user = userService.getById(id);
+        var group = groupService.getUserGroup(user);
+        var textMsg = "" + 
+        "Welcome to bot, enter command /join to join group " +
+        "\n /creategroup to create one";
+        if (group != null)
+            textMsg += "\nYou have a group :), type /groupinfo to see info";
         var joinButton = InlineKeyboardButton.builder()
         .text("Join 👥")
         .callbackData("/join")
@@ -338,9 +344,7 @@ public class MtQuizBot extends TelegramLongPollingBot {
         var menu = InlineKeyboardMarkup.builder()
         .keyboardRow(List.of(joinButton,createButton))
         .build();
-        sendInlineMenu(id, "" + 
-        "Welcome to bot, enter command /join to join group " +
-        "\n /creategroup to create one", menu);
+        sendInlineMenu(id, textMsg , menu);
     }
     
     @CommandAction("/groupinfo")
@@ -386,32 +390,8 @@ public class MtQuizBot extends TelegramLongPollingBot {
             "\n /creategroup to create one");
             return;
         }
-        var tests = testsService.getTestList(group);
-        StringBuilder strB = new StringBuilder();
-        List<InlineKeyboardButton> testButtons = new ArrayList();
-        var menu = InlineKeyboardMarkup.builder();
-        int buttonsInRowleft = maxTestButtonsInTestsMenuRow;
-        int cnt = 0;
-        strB.append("your groups tests:\n");
-        for (var test : tests) {
-            cnt++;
-            strB.append(Integer.toString(cnt) + "): " + test.getName() + " - " + test.getDescription() + "\n");
-            buttonsInRowleft--;
-            testButtons.add(
-                InlineKeyboardButton.builder()
-                .callbackData("/test " + test.getId())
-                .text(Integer.toString(cnt) + "✅")
-                .build()
-            );
-            if (buttonsInRowleft == 0) {
-                menu.keyboardRow(testButtons);
-                testButtons = new ArrayList<>();
-                buttonsInRowleft = maxTestButtonsInTestsMenuRow;
-            }
-        }
-        if (buttonsInRowleft > 0)
-            menu.keyboardRow(testButtons);
-        sendInlineMenu(id, strB.toString(), menu.build());
+        var testsDescriptionWithMenu = testsService.getGroupTestsMenuWithDescription(group, maxTestButtonsInTestsMenuRow);
+        sendInlineMenu(id, testsDescriptionWithMenu.getSecond(), testsDescriptionWithMenu.getFirst());
     }
 
     @CommandAction("/createtest")
@@ -530,6 +510,22 @@ public class MtQuizBot extends TelegramLongPollingBot {
         infoByUser.get(user.getId()).put("TEST_TO_EDIT", test.getId());
         infoByUser.get(user.getId()).put("PROPERTY_TO_EDIT", property);
         sendText(user.getId(), "Please enter new property value");
+    }
+
+    @CommandAction("/backtotests")
+    private void backToTests(Update update) {
+        deleteMsg(update.getMessage().getFrom().getId(), update.getMessage().getMessageId());
+        actionByCommand.get("/tests").accept(update);
+    }
+
+    @CommandAction("/editquestions")
+    private void editTestQuestions(Update update) {
+        if (!update.hasCallbackQuery())
+            return;
+        var query = update.getCallbackQuery();
+        var args = query.getData().split(" ");
+        var testId = args[1];
+        var test = testsService.getById(testId);
     }
 
     @Override
