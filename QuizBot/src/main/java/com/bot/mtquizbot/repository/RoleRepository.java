@@ -51,7 +51,7 @@ public class RoleRepository implements IRoleRepository{
     @Override
     public RoleDb getUserRole(User user, TestGroup group) {
         return DataAccessUtils.singleResult(
-            template.query(SQL_SELECT_BY_USER_GROUP_ID, roleMapper, user.getId(), group.getId())
+            template.query(SQL_SELECT_BY_USER_GROUP_ID, roleMapper, user.getLongId(), group.getId())
         );
     }
 
@@ -59,7 +59,7 @@ public class RoleRepository implements IRoleRepository{
     public void addUserRole(TestGroup group, User user, RoleDb role) {
         var result = template.update(SQL_ADD_ROLE,
         group.getId(),
-        user.getId(),
+        user.getLongId(),
         role.getId());
     }
 }

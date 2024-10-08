@@ -49,7 +49,7 @@ public class GroupRepository implements IGroupRepository {
     @Override
     public TestGroup getUserGroup(User user) {
         return DataAccessUtils.singleResult(
-            template.query(SQL_SELECT_BY_USER, mapper, user.getId())
+            template.query(SQL_SELECT_BY_USER, mapper, user.getLongId())
         );
     }
 }

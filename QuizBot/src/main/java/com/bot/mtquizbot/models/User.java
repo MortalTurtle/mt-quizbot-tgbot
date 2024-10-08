@@ -1,15 +1,16 @@
 package com.bot.mtquizbot.models;
 
 import com.fasterxml.jackson.annotation.JsonProperty;
+
 import lombok.Data;
 import lombok.RequiredArgsConstructor;
 
 @Data
 @RequiredArgsConstructor
-public class User {
+public class User implements IModel {
 
     @JsonProperty("id")
-    private final long id;
+    private final String id;
 
     @JsonProperty("username")
     private final String username;
@@ -18,5 +19,7 @@ public class User {
     private final String group_id;
 
     @Override
-    public String toString() { return Long.toString(id); }
+    public String toString() { return id; }
+
+    public Long getLongId() { return Long.getLong(id); } 
 }

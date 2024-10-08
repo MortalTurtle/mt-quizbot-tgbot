@@ -7,7 +7,7 @@ import lombok.RequiredArgsConstructor;
 
 @Data
 @RequiredArgsConstructor
-public class TestGroup {
+public class TestGroup implements IModel {
     @JsonProperty("id")
     private final String id;
     

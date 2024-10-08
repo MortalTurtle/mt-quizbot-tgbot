@@ -153,7 +153,7 @@ public class MtQuizBot extends TelegramLongPollingBot {
         var id = user.getId();
         if (!intermediateInfoByUser.containsKey(id))
             intermediateInfoByUser.put(id, new HashMap<>());
-        userService.insert(new User(id, user.getUserName(), null));
+        userService.insert(new User(Long.toString(id), user.getUserName(), null));
         if (!botStateByUser.containsKey(id))
             botStateByUser.put(id, BotState.idle);
         if (msg.hasText()) {
@@ -281,7 +281,7 @@ public class MtQuizBot extends TelegramLongPollingBot {
             null,
             msg.getText()
         );
-        intermediateInfoByUser.get(user.getId()).remove(IntermediateVariable.TEST_NAME);
+        intermediateInfoByUser.get(user.getLongId()).remove(IntermediateVariable.TEST_NAME);
         botStateByUser.replace(id, BotState.idle);
         sendText(id,"Test created succesefully, go to /tests to add questions to your test");
     }
@@ -295,19 +295,19 @@ public class MtQuizBot extends TelegramLongPollingBot {
             sendText(id, "No text");
             return;
         }
-        var testId = intermediateInfoByUser.get(user.getId()).get(IntermediateVariable.TEST_TO_EDIT);
-        var property = intermediateInfoByUser.get(user.getId()).get(IntermediateVariable.TEST_PROPERTY_TO_EDIT);
-        intermediateInfoByUser.get(user.getId()).remove(IntermediateVariable.TEST_PROPERTY_TO_EDIT);
-        intermediateInfoByUser.get(user.getId()).remove(IntermediateVariable.TEST_TO_EDIT);
+        var testId = intermediateInfoByUser.get(user.getLongId()).get(IntermediateVariable.TEST_TO_EDIT);
+        var property = intermediateInfoByUser.get(user.getLongId()).get(IntermediateVariable.TEST_PROPERTY_TO_EDIT);
+        intermediateInfoByUser.get(user.getLongId()).remove(IntermediateVariable.TEST_PROPERTY_TO_EDIT);
+        intermediateInfoByUser.get(user.getLongId()).remove(IntermediateVariable.TEST_TO_EDIT);
         var test = testsService.getById(testId);
         if (test == null ) {
-            botStateByUser.replace(user.getId(), BotState.idle);
-            sendText(user.getId(), "No test found, try againg :(");
+            botStateByUser.replace(user.getLongId(), BotState.idle);
+            sendText(user.getLongId(), "No test found, try againg :(");
         }
         try {
             testsService.updateTestProperty(test, property , msg.getText());
         } catch (NumberFormatException e) {
-            sendText(user.getId(), "Oops... Something went wrong, maybe wrong input format?");
+            sendText(user.getLongId(), "Oops... Something went wrong, maybe wrong input format?");
             return;
         } catch (NoSuchFieldException | IllegalArgumentException ex) {
             throw new RuntimeException(ex);
@@ -316,7 +316,7 @@ public class MtQuizBot extends TelegramLongPollingBot {
         sendInlineMenu(id,
             testsService.getTestFullDescription(test) ,
             testsService.getEditMenu(updatedTest));
-        botStateByUser.replace(user.getId(), BotState.idle);
+        botStateByUser.replace(user.getLongId(), BotState.idle);
     }
 
     @StateAction(BotState.waitingForQuestionText)
@@ -329,8 +329,8 @@ public class MtQuizBot extends TelegramLongPollingBot {
             return;
         }
         var questionText = msg.getText();
-        var testId = intermediateInfoByUser.get(user.getId()).get(IntermediateVariable.TEST_TO_EDIT);
-        var questionType = intermediateInfoByUser.get(user.getId()).get(IntermediateVariable.QUESTION_TYPE);
+        var testId = intermediateInfoByUser.get(user.getLongId()).get(IntermediateVariable.TEST_TO_EDIT);
+        var questionType = intermediateInfoByUser.get(user.getLongId()).get(IntermediateVariable.QUESTION_TYPE);
         questionsService.addQuestion(testId ,questionType, 0, questionText);
         botStateByUser.replace(id, BotState.idle);
         sendText(id, "Question added go to your test to edit");
@@ -452,12 +452,12 @@ public class MtQuizBot extends TelegramLongPollingBot {
         var test = testsService.getById(testId);
         var user = userService.getById(query.getFrom().getId());
         if (test == null) {
-            sendText(user.getId(), "Sorry no such test");
+            sendText(user.getLongId(), "Sorry no such test");
             return;
         }
         var group = groupService.getById(test.getGroup_id());
         if (!group.getId().equals(user.getGroup_id()))
-            sendText(user.getId(), "You are not a part of this group, sry I guess :(");
+            sendText(user.getLongId(), "You are not a part of this group, sry I guess :(");
         var role = roleService.getUserRole(user, group);
         var menu = InlineKeyboardMarkup.builder();
         var startButton = InlineKeyboardButton.builder()
@@ -465,7 +465,7 @@ public class MtQuizBot extends TelegramLongPollingBot {
             .text("Start test 🎓").build();
         menu.keyboardRow(List.of(startButton));
         if (role == GroupRole.Owner ||
-            role == GroupRole.Contributor && test.getOwner_id() == user.getId()) {
+            role == GroupRole.Contributor && test.getOwner_id() == user.getLongId()) {
             var editButton = InlineKeyboardButton.builder()
             .callbackData("/edittest " + test.getId())
             .text("Edit 📝").build();
@@ -492,19 +492,19 @@ public class MtQuizBot extends TelegramLongPollingBot {
         var test = testsService.getById(testId);
         var user = userService.getById(query.getFrom().getId());
         if (test == null) {
-            sendText(user.getId(), "Sorry no such test");
+            sendText(user.getLongId(), "Sorry no such test");
             return;
         }
         var group = groupService.getById(test.getGroup_id());
         if (!group.getId().equals(user.getGroup_id())) {
-            sendText(user.getId(), "You are not a part of this group, sry I guess :(");
+            sendText(user.getLongId(), "You are not a part of this group, sry I guess :(");
             return;
         }
         var role = roleService.getUserRole(user, group);
         if (role == GroupRole.Participant ||
             role == GroupRole.Contributor &&
-            test.getOwner_id() != user.getId()) {
-            sendText(user.getId(), "You have no rights to edit this test, sry I guess :(");
+            test.getOwner_id() != user.getLongId()) {
+            sendText(user.getLongId(), "You have no rights to edit this test, sry I guess :(");
             return;
         }
         buttonTap(query,
@@ -521,26 +521,26 @@ public class MtQuizBot extends TelegramLongPollingBot {
         var testId = args[1];
         var test = testsService.getById(testId);
         var user = userService.getById(query.getFrom().getId());
-        deleteMsg(user.getId(), query.getMessage().getMessageId());
+        deleteMsg(user.getLongId(), query.getMessage().getMessageId());
         if (test == null) {
-            sendText(user.getId(), "Sorry no such test");
+            sendText(user.getLongId(), "Sorry no such test");
             return;
         }
         var group = groupService.getById(test.getGroup_id());
         if (!group.getId().equals(user.getGroup_id()))
-            sendText(user.getId(), "You are not a part of this group, sry I guess :(");
+            sendText(user.getLongId(), "You are not a part of this group, sry I guess :(");
         var role = roleService.getUserRole(user, group);
         if (role == GroupRole.Participant ||
             role == GroupRole.Contributor &&
-            test.getOwner_id() != user.getId()) {
-            sendText(user.getId(), "You have no rights to edit this test, sry I guess :(");
+            test.getOwner_id() != user.getLongId()) {
+            sendText(user.getLongId(), "You have no rights to edit this test, sry I guess :(");
             return;
         }
         var property = args[2];
-        botStateByUser.replace(user.getId(), BotState.waitingForNewTestProperty);
-        intermediateInfoByUser.get(user.getId()).put(IntermediateVariable.TEST_TO_EDIT, test.getId());
-        intermediateInfoByUser.get(user.getId()).put(IntermediateVariable.TEST_PROPERTY_TO_EDIT, property);
-        sendText(user.getId(), "Please enter new property value");
+        botStateByUser.replace(user.getLongId(), BotState.waitingForNewTestProperty);
+        intermediateInfoByUser.get(user.getLongId()).put(IntermediateVariable.TEST_TO_EDIT, test.getId());
+        intermediateInfoByUser.get(user.getLongId()).put(IntermediateVariable.TEST_PROPERTY_TO_EDIT, property);
+        sendText(user.getLongId(), "Please enter new property value");
     }
 
     @CommandAction("/backtotests")
@@ -560,7 +560,7 @@ public class MtQuizBot extends TelegramLongPollingBot {
         Boolean hasOffsetParameter = args.length >= 3;
         var test = testsService.getById(testId);
         if (test == null) {
-            sendText(user.getId(), "Sorry no such test");
+            sendText(user.getLongId(), "Sorry no such test");
             return;
         }
         var offset = hasOffsetParameter ? Integer.parseInt(args[2]) : 0;
@@ -610,14 +610,14 @@ public class MtQuizBot extends TelegramLongPollingBot {
         var test = testsService.getById(testId);
         var user = userService.getById(query.getFrom().getId());
         if (test == null) {
-            sendText(user.getId(), "Sorry no such test");
+            sendText(user.getLongId(), "Sorry no such test");
             return;
         }
         var types = testsService.getQuestionTypeList();
         var menu = questionsService.getQuestionTypeMenuBuilder(
             types,
             MAX_QUESTIONS_TYPES_IN_MENU_ROW);
-        intermediateInfoByUser.get(user.getId()).put(IntermediateVariable.TEST_TO_EDIT, test.getId());
+        intermediateInfoByUser.get(user.getLongId()).put(IntermediateVariable.TEST_TO_EDIT, test.getId());
         buttonTap(query, questionsService.getQuestionTypeDescriptionMessage(types), menu.build());
     }
 
@@ -629,10 +629,10 @@ public class MtQuizBot extends TelegramLongPollingBot {
         var args = query.getData().split(" ");
         var typeId = args[1];
         var user = userService.getById(query.getFrom().getId());
-        deleteMsg(user.getId(), query.getMessage().getMessageId());
-        intermediateInfoByUser.get(user.getId()).put(IntermediateVariable.QUESTION_TYPE, typeId);
-        sendText(user.getId(), "Please enter a question text");
-        botStateByUser.replace(user.getId(), BotState.waitingForQuestionText);
+        deleteMsg(user.getLongId(), query.getMessage().getMessageId());
+        intermediateInfoByUser.get(user.getLongId()).put(IntermediateVariable.QUESTION_TYPE, typeId);
+        sendText(user.getLongId(), "Please enter a question text");
+        botStateByUser.replace(user.getLongId(), BotState.waitingForQuestionText);
     }
 
     @Override

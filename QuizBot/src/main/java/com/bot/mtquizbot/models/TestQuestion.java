@@ -9,7 +9,7 @@ import lombok.Data;
 
 @Data
 @AllArgsConstructor
-public class TestQuestion {
+public class TestQuestion implements IModel {
     @JsonProperty("id")
     private String id;
 

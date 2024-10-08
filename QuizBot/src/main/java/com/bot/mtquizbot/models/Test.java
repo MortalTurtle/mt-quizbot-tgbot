@@ -14,7 +14,7 @@ import lombok.Data;
 
 @Data
 @AllArgsConstructor
-public class Test {
+public class Test implements IModel {
     @JsonProperty("id")
     private String id;
     

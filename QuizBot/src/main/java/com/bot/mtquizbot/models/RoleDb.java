@@ -5,7 +5,7 @@ import com.fasterxml.jackson.annotation.JsonProperty;
 import lombok.Data;
 
 @Data
-public class RoleDb {
+public class RoleDb implements IModel {
     @JsonProperty("id")
     private final String id;
     
