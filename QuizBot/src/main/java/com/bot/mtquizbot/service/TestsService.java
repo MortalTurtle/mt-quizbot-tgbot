@@ -11,7 +11,6 @@ import org.springframework.stereotype.Service;
 import org.telegram.telegrambots.meta.api.objects.replykeyboard.InlineKeyboardMarkup;
 import org.telegram.telegrambots.meta.api.objects.replykeyboard.buttons.InlineKeyboardButton;
 
-import com.bot.mtquizbot.models.CanEditObjectField;
 import com.bot.mtquizbot.models.QuestionType;
 import com.bot.mtquizbot.models.Test;
 import com.bot.mtquizbot.models.TestGroup;
@@ -64,22 +63,11 @@ public class TestsService extends BaseService {
     }
 
     public InlineKeyboardMarkup getEditMenu(Test test) {
-        var fields = test.getClass().getDeclaredFields();
-        var menu = InlineKeyboardMarkup.builder();
         var editQuestionsButton = InlineKeyboardButton.builder()
             .callbackData("/editquestions " + test.getId())
             .text("Questions 📌").build();
+        var menu = BaseService.getEditMenuBuilder(test, "/ststfield");
         menu.keyboardRow(List.of(editQuestionsButton));
-        for (var field : fields) {
-            if (field.isAnnotationPresent(CanEditObjectField.class)) {
-                field.setAccessible(true);
-                var annotation = field.getAnnotation(CanEditObjectField.class);
-                menu.keyboardRow(List.of(InlineKeyboardButton.builder()
-                .text(annotation.getPropertyButtonText())
-                .callbackData("/ststfield " + test.getId() + " " + field.getName()).build()
-                ));
-            }
-        }
         var backButton = InlineKeyboardButton.builder().callbackData("/backtotests").text("Back 🚫").build();
         menu.keyboardRow(List.of(backButton));
         return menu.build();
