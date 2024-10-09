@@ -22,7 +22,7 @@ public class Test implements IModel {
     private String group_id;
     
     @JsonProperty("owner_id")
-    private Long owner_id;
+    private String owner_id;
 
     @CanEditObjectField(getPropertyButtonText="Test name 🎆")
     @JsonProperty("name")

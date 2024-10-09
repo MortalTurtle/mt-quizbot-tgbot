@@ -2,9 +2,7 @@ package com.bot.mtquizbot.service;
 
 
 import java.util.ArrayList;
-import java.util.HashMap;
 import java.util.List;
-import java.util.function.Function;
 
 import org.glassfish.grizzly.utils.Pair;
 import org.springframework.stereotype.Service;
@@ -17,19 +15,14 @@ import com.bot.mtquizbot.models.TestGroup;
 import com.bot.mtquizbot.models.User;
 import com.bot.mtquizbot.repository.ITestsRepository;
 
+import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 
 @Service
 @Slf4j
+@RequiredArgsConstructor
 public class TestsService extends BaseService {
     protected final ITestsRepository repo;
-    private final HashMap<Class<?>, Function<String, Object>> convertStringValueToSomeClass = new HashMap<>();
-
-    public TestsService(ITestsRepository repo) {
-        this.repo = repo;
-        convertStringValueToSomeClass.put(String.class, (String str) -> str);
-        convertStringValueToSomeClass.put(Integer.class, (String str) -> Integer.valueOf(str));
-    }
 
     public QuestionType getQuestionTypeById(String id) {
         log.trace("#### getQuestionTypeById() [id={}]", id);
@@ -107,14 +100,7 @@ public class TestsService extends BaseService {
     public void updateTestProperty(Test test, String propertyName, String strVal) throws NoSuchFieldException,
         IllegalArgumentException,
         NumberFormatException {
-        var field = test.getClass().getDeclaredField(propertyName);
-        field.setAccessible(true);
-        var fieldType = field.getType();
-        try {
-            field.set(test, convertStringValueToSomeClass.get(fieldType).apply(strVal));
-        } catch (IllegalAccessException ex) {
-            throw new RuntimeException(ex);
-        }
+        setNewFieldValueFromString(test, propertyName, strVal);
         repo.updateTest(test);
     }
 }

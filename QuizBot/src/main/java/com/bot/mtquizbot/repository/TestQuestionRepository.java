@@ -48,4 +48,16 @@ public class TestQuestionRepository implements ITestQuestionRepository {
             template.query(SQL_INSERT_QUESTION, TEST_QUESTIONS_MAPPER, testId, typeId, weight, text)
         );
     }
+
+    @Override
+    public void updateTestQuestion(TestQuestion question) {
+        template.update("" +
+            "UPDATE quizdb.test_questions SET type_id = ?, answer = ?, weight = ?, text = ? WHERE id = ?",
+            question.getTypeId(),
+            question.getAnswer(),
+            question.getWeight(),
+            question.getText(),
+            question.getId()
+        );
+    }
 }

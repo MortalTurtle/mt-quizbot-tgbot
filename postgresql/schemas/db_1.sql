@@ -11,7 +11,7 @@ CREATE TABLE IF NOT EXISTS quizdb.groups(
 );
 
 CREATE TABLE IF NOT EXISTS quizdb.users(
-    id BIGINT PRIMARY KEY,
+    id TEXT PRIMARY KEY,
     username VARCHAR(100) NOT NULL,
     group_id TEXT
 );
@@ -28,7 +28,7 @@ INSERT INTO quizdb.group_roles(name) VALUES
 
 CREATE TABLE IF NOT EXISTS quizdb.group_users(
     group_id TEXT REFERENCES quizdb.groups(id),
-    user_id BIGINT REFERENCES quizdb.users(id),
+    user_id TEXT REFERENCES quizdb.users(id),
     group_role_id TEXT REFERENCES quizdb.group_roles(id),
     UNIQUE(group_id, user_id)
 );
@@ -36,7 +36,7 @@ CREATE TABLE IF NOT EXISTS quizdb.group_users(
 CREATE TABLE IF NOT EXISTS quizdb.tests(
     id TEXT PRIMARY KEY DEFAULT uuid_generate_v4(),
     group_id TEXT REFERENCES quizdb.groups(id),
-    owner_id BIGINT REFERENCES quizdb.users(id),
+    owner_id TEXT REFERENCES quizdb.users(id),
     name TEXT NOT NULL,
     min_score INTEGER,
     description TEXT NOT NULL,
@@ -59,6 +59,7 @@ CREATE TABLE IF NOT EXISTS quizdb.test_questions(
     id TEXT PRIMARY KEY DEFAULT uuid_generate_v4(),
     test_id TEXT REFERENCES quizdb.tests(id),
     type_id TEXT REFERENCES quizdb.question_type(id),
+    answer TEXT,
     weight INTEGER,
     text TEXT NOT NULL,
     created_ts TIMESTAMP DEFAULT NOW()
@@ -66,18 +67,13 @@ CREATE TABLE IF NOT EXISTS quizdb.test_questions(
 
 CREATE INDEX IF NOT EXISTS idx_by_created_ts_questions ON quizdb.test_questions(created_ts);
 
-CREATE TABLE IF NOT EXISTS quizdb.question_answer(
-    question_id TEXT REFERENCES quizdb.test_questions(id),
-    text TEXT NOT NULL
-);
-
 CREATE TABLE IF NOT EXISTS quizdb.question_false_answers(
     question_id TEXT REFERENCES quizdb.test_questions(id),
     text TEXT NOT NULL
 );
 
 CREATE TABLE IF NOT EXISTS quizdb.test_results(
-    user_id BIGINT REFERENCES quizdb.users(id),
+    user_id TEXT REFERENCES quizdb.users(id),
     test_id TEXT REFERENCES quizdb.tests(id),
     score INTEGER NOT NULL
 );

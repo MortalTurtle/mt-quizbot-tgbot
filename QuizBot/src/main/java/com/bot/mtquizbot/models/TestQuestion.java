@@ -19,9 +19,15 @@ public class TestQuestion implements IModel {
     @JsonProperty("type_id")
     private String typeId;
 
+    @CanEditObjectField(getPropertyButtonText="Correct answer ✅")
+    @JsonProperty("answer")
+    private String answer;
+
+    @CanEditObjectField(getPropertyButtonText="Weight 💰")
     @JsonProperty("weight")
     private Integer weight;
 
+    @CanEditObjectField(getPropertyButtonText="Text ❓")
     @JsonProperty("text")
     private String text;
 

@@ -277,7 +277,7 @@ public class MtQuizBot extends TelegramLongPollingBot {
         var user = userService.getById(id);
         testsService.create(user,
             groupService.getUserGroup(user),
-            intermediateInfoByUser.get(id).get(IntermediateVariable.TEST_NAME),
+            intermediateInfoByUser.get(user.getLongId()).get(IntermediateVariable.TEST_NAME),
             null,
             msg.getText()
         );
@@ -334,6 +334,27 @@ public class MtQuizBot extends TelegramLongPollingBot {
         questionsService.addQuestion(testId ,questionType, 0, questionText);
         botStateByUser.replace(id, BotState.idle);
         sendText(id, "Question added go to your test to edit");
+    }
+
+    @StateAction(BotState.waitingForNewQuestionProperty)
+    private void botWatitingForNewQuestionProperty(Update update) {
+        var msg = update.getMessage();
+        var id = msg.getFrom().getId();
+        var user = userService.getById(id);
+        if (!msg.hasText()) {
+            sendText(id, "No text");
+            return;
+        }
+        var propertyVal = msg.getText();
+        var questionId = intermediateInfoByUser.get(user.getLongId()).get(IntermediateVariable.QUESTION_TO_EDIT);
+        var question = questionsService.getQuestionById(questionId);
+        if (question == null) {
+            sendText(user.getLongId(), "Ooops... somethig went wrong :(" );
+            return;
+        }
+        var questionFieldName = intermediateInfoByUser.get(user.getLongId()).get(IntermediateVariable.QUESTION_PROPERTY_TO_EDIT);
+        questionsService.updateQuestionProperty(question, questionFieldName, propertyVal);
+        sendText(user.getLongId(), "Property value changed, go to question to check");
     }
 
     @CommandAction("/creategroup")
@@ -465,7 +486,7 @@ public class MtQuizBot extends TelegramLongPollingBot {
             .text("Start test 🎓").build();
         menu.keyboardRow(List.of(startButton));
         if (role == GroupRole.Owner ||
-            role == GroupRole.Contributor && test.getOwner_id() == user.getLongId()) {
+            role == GroupRole.Contributor && test.getOwner_id() == user.getId()) {
             var editButton = InlineKeyboardButton.builder()
             .callbackData("/edittest " + test.getId())
             .text("Edit 📝").build();
@@ -503,7 +524,7 @@ public class MtQuizBot extends TelegramLongPollingBot {
         var role = roleService.getUserRole(user, group);
         if (role == GroupRole.Participant ||
             role == GroupRole.Contributor &&
-            test.getOwner_id() != user.getLongId()) {
+            test.getOwner_id() != user.getId()) {
             sendText(user.getLongId(), "You have no rights to edit this test, sry I guess :(");
             return;
         }
@@ -532,7 +553,7 @@ public class MtQuizBot extends TelegramLongPollingBot {
         var role = roleService.getUserRole(user, group);
         if (role == GroupRole.Participant ||
             role == GroupRole.Contributor &&
-            test.getOwner_id() != user.getLongId()) {
+            test.getOwner_id() != user.getId()) {
             sendText(user.getLongId(), "You have no rights to edit this test, sry I guess :(");
             return;
         }
@@ -598,7 +619,51 @@ public class MtQuizBot extends TelegramLongPollingBot {
 
     @CommandAction("/editquestion")
     private void editTestQuestion(Update update) {
+        var query = update.getCallbackQuery();
+        var args = query.getData().split(" ");
+        var questionId = args[1];
+        var user = userService.getById(query.getFrom().getId());
+        var question = questionsService.getQuestionById(questionId);
+        if (question == null) {
+            sendText(user.getLongId(), "No such question found, maybe something went wrong :(");
+            return;
+        }
+        var menuB = questionsService.getQuestionEditMenu(question);
+        buttonTap(query,
+            questionsService.getQuestionDescriptionMessage(question),
+            menuB.build()
+        );
     }
+    
+   
+    @CommandAction("/setqfield")
+    private void editQuestion(Update update) {
+        if (!update.hasCallbackQuery())
+            return;
+        var query = update.getCallbackQuery();
+        var args = query.getData().split(" ");
+        var questionId = args[1];
+        var user = userService.getById(query.getFrom().getId());
+        var question = questionsService.getQuestionById(questionId);
+        if (question == null || args.length <= 2) {
+            sendText(user.getLongId(), "Oops... something went wrong :(");
+            return;
+        }
+        var field = args[2];
+        deleteMsg(user.getLongId(), query.getMessage().getMessageId());
+        intermediateInfoByUser.get(user.getLongId())
+            .put(IntermediateVariable.QUESTION_PROPERTY_TO_EDIT, field);
+        intermediateInfoByUser.get(user.getLongId())
+            .put(IntermediateVariable.QUESTION_TO_EDIT, questionId);
+        sendText(user.getLongId(), "Please enter a new value");
+        botStateByUser.replace(user.getLongId(), BotState.waitingForNewQuestionProperty);
+    }
+
+    @CommandAction("/editquestiontype")
+    private void editQuestionType(Update update) {
+        //TODO
+    }
+
 
     @CommandAction("/addquestion")
     private void addTestQuestion(Update update) {
@@ -617,7 +682,8 @@ public class MtQuizBot extends TelegramLongPollingBot {
         var menu = questionsService.getQuestionTypeMenuBuilder(
             types,
             MAX_QUESTIONS_TYPES_IN_MENU_ROW);
-        intermediateInfoByUser.get(user.getLongId()).put(IntermediateVariable.TEST_TO_EDIT, test.getId());
+        var info = intermediateInfoByUser.get(user.getLongId());
+        info.put(IntermediateVariable.TEST_TO_EDIT, test.getId());
         buttonTap(query, questionsService.getQuestionTypeDescriptionMessage(types), menu.build());
     }
 

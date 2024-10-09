@@ -31,7 +31,7 @@ public class UserRepository implements IUserRepository {
         this.template = template;
     }
     @Override
-    public User getById(long id) {
+    public User getById(String id) {
         return DataAccessUtils.singleResult(
                 template.query(SQL_SELECT_BY_NAME, USER_MAPPER, id));
     }
@@ -48,7 +48,7 @@ public class UserRepository implements IUserRepository {
     }
 
     @Override
-    public void updateGroupById(long id, String groupId) {
+    public void updateGroupById(String id, String groupId) {
         var result = template.update(SQL_UPDATE_GROUP, groupId, id);
     }
 }

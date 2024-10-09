@@ -21,5 +21,5 @@ public class User implements IModel {
     @Override
     public String toString() { return id; }
 
-    public Long getLongId() { return Long.getLong(id); } 
+    public Long getLongId() { return Long.parseLong(id); } 
 }

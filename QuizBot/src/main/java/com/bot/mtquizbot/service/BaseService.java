@@ -1,5 +1,7 @@
 package com.bot.mtquizbot.service;
+import java.util.HashMap;
 import java.util.List;
+import java.util.function.Function;
 
 import org.telegram.telegrambots.meta.api.objects.replykeyboard.InlineKeyboardMarkup;
 import org.telegram.telegrambots.meta.api.objects.replykeyboard.InlineKeyboardMarkup.InlineKeyboardMarkupBuilder;
@@ -10,6 +12,13 @@ import com.bot.mtquizbot.models.CanEditObjectField;
 import com.bot.mtquizbot.models.IModel;
 
 public class BaseService {
+    private final HashMap<Class<?>, Function<String, Object>> convertStringValueToSomeClass = new HashMap<>();
+
+    public BaseService() {
+        convertStringValueToSomeClass.put(String.class, (String str) -> str);
+        convertStringValueToSomeClass.put(Integer.class, (String str) -> Integer.valueOf(str));
+    }
+
     public <T> T wrapResult(T result) {
         if(result == null)
             throw new NotFoundException();
@@ -36,5 +45,16 @@ public class BaseService {
             }
         }
         return menu;
+    }
+
+    protected void setNewFieldValueFromString(IModel model, String fieldName, String value) throws NoSuchFieldException {
+        var field = model.getClass().getDeclaredField(fieldName);
+        field.setAccessible(true);
+        var fieldType = field.getType();
+        try {
+            field.set(model, convertStringValueToSomeClass.get(fieldType).apply(value));
+        } catch (IllegalAccessException ex) {
+            throw new RuntimeException(ex);
+        }
     }
 }

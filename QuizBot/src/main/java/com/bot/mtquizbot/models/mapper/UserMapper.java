@@ -10,7 +10,7 @@ public class UserMapper implements RowMapper<User> {
     @Override
     public User mapRow(ResultSet rs, int rowNum) throws SQLException {
         var entity = new User(
-                rs.getLong("id"),
+                rs.getString("id"),
                 rs.getString("username"),
                 rs.getString("group_id")
         );

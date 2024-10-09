@@ -21,6 +21,11 @@ public class UserService extends BaseService {
     }
     public User getById(long id) {
         log.trace("#### getById() [id={}]", id);
+        return repo.getById(Long.toString(id));
+    }
+
+    public User getById(String id) {
+        log.trace("#### getById() [id={}]", id);
         return repo.getById(id);
     }
     public void insert(User entity) {
@@ -28,6 +33,10 @@ public class UserService extends BaseService {
         repo.insert(entity);
     }
     public void updateGroupById(long id, String groupId) {
+        log.trace("#### updateGroup_id() [group_id={}, user_id={}]", id, groupId);
+        repo.updateGroupById(Long.toString(id), groupId);
+    }
+    public void updateGroupById(String id, String groupId) {
         log.trace("#### updateGroup_id() [group_id={}, user_id={}]", id, groupId);
         repo.updateGroupById(id, groupId);
     }
