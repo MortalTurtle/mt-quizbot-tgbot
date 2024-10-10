@@ -7,7 +7,7 @@ import lombok.RequiredArgsConstructor;
 
 @Data
 @RequiredArgsConstructor
-public class QuestionType {
+public class QuestionType implements IModel {
 
     @JsonProperty("id")
     private final String id;

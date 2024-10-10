@@ -14,6 +14,7 @@ public class TestQuestionMapper implements RowMapper<TestQuestion> {
                 rs.getString("id"),
                 rs.getString("test_id"),
                 rs.getString("type_id"),
+                rs.getString("answer"),
                 rs.getInt("weight"),
                 rs.getString("text"),
                 rs.getTimestamp("created_ts")

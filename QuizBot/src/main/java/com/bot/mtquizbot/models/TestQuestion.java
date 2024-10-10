@@ -9,7 +9,7 @@ import lombok.Data;
 
 @Data
 @AllArgsConstructor
-public class TestQuestion {
+public class TestQuestion implements IModel {
     @JsonProperty("id")
     private String id;
 
@@ -19,9 +19,15 @@ public class TestQuestion {
     @JsonProperty("type_id")
     private String typeId;
 
+    @CanEditObjectField(getPropertyButtonText="Correct answer ✅")
+    @JsonProperty("answer")
+    private String answer;
+
+    @CanEditObjectField(getPropertyButtonText="Weight 💰")
     @JsonProperty("weight")
     private Integer weight;
 
+    @CanEditObjectField(getPropertyButtonText="Text ❓")
     @JsonProperty("text")
     private String text;
 

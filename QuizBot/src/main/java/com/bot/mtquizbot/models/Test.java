@@ -14,7 +14,7 @@ import lombok.Data;
 
 @Data
 @AllArgsConstructor
-public class Test {
+public class Test implements IModel {
     @JsonProperty("id")
     private String id;
     
@@ -22,7 +22,7 @@ public class Test {
     private String group_id;
     
     @JsonProperty("owner_id")
-    private Long owner_id;
+    private String owner_id;
 
     @CanEditObjectField(getPropertyButtonText="Test name 🎆")
     @JsonProperty("name")

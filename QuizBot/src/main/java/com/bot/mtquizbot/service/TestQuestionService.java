@@ -18,7 +18,7 @@ import lombok.extern.slf4j.Slf4j;
 @Service
 @Slf4j
 @RequiredArgsConstructor
-public class TestQuestionService {
+public class TestQuestionService extends BaseService {
 
     private final ITestQuestionRepository testQuestionRepository;
 
@@ -75,6 +75,22 @@ public class TestQuestionService {
         return menu;
     }
 
+    public InlineKeyboardMarkupBuilder getQuestionEditMenu(TestQuestion question) {
+        var menu = BaseService.getEditMenuBuilder(question, "/setqfield");
+        var editTypeButton = InlineKeyboardButton.builder()
+            .text("Question type 🔗")
+            .callbackData("/editquestiontype " + question.getId())
+            .build();
+        menu.keyboardRow(List.of(editTypeButton));
+        return menu;
+    }
+
+    public String getQuestionDescriptionMessage(TestQuestion question) {
+        return question.getText() + 
+            "\nAnswer: " + question.getAnswer() + 
+            "\nWeight: " + Integer.toString(question.getWeight());
+    }
+
     public String getQuestionTypeDescriptionMessage(List<QuestionType> types) {
         var strB = new StringBuilder();
         for (var type : types) {
@@ -93,5 +109,14 @@ public class TestQuestionService {
                 "\n");
         }
         return strB.toString();
+    }
+
+    public void updateQuestionProperty(TestQuestion q, String propertyName, String strVal) {
+        try {
+            setNewFieldValueFromString(q, propertyName, strVal);
+        } catch (NoSuchFieldException ex) {
+            throw new RuntimeException(ex);
+        }
+        testQuestionRepository.updateTestQuestion(q);
     }
 }

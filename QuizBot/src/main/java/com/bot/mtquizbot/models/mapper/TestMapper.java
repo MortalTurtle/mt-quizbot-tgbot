@@ -13,7 +13,7 @@ public class TestMapper implements RowMapper<Test> {
         var entity = new Test(
                 rs.getString("id"),
                 rs.getString("group_id"),
-                rs.getLong("owner_id"),
+                rs.getString("owner_id"),
                 rs.getString("name"),
                 rs.getInt("min_score"),
                 rs.getString("description"),
