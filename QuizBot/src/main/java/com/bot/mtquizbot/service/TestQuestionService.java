@@ -37,6 +37,11 @@ public class TestQuestionService extends BaseService {
         return testQuestionRepository.addQuestion(testId, typeId, weight, text);
     }
 
+    public void addFalseAnswer(TestQuestion question, String ansTextString) {
+        log.trace("#### addFalseAnswer() [question={}, text={}]", question, ansTextString);
+        testQuestionRepository.addFalseAnswer(question, ansTextString);
+    }
+
     public InlineKeyboardMarkupBuilder getQuestionsMenuBuilder(List<TestQuestion> questions, int buttonsInSingleRow) {
         var menu = InlineKeyboardMarkup.builder();
         List<InlineKeyboardButton> row = new ArrayList<>();
@@ -75,14 +80,34 @@ public class TestQuestionService extends BaseService {
         return menu;
     }
 
+    public QuestionType getQuestionTypeById(String id) {
+        log.trace("#### getQuestionTypeById() [id={}]", id);
+        return testQuestionRepository.getQuestionTypeById(id);
+    }
+
+    public List<QuestionType> getQuestionTypeList() {
+        log.trace("#### getQuestionTypeList() - working");
+        return testQuestionRepository.getQuestionTypeList();
+    }
+
     public InlineKeyboardMarkupBuilder getQuestionEditMenu(TestQuestion question) {
         var menu = BaseService.getEditMenuBuilder(question, "/setqfield");
-        var editTypeButton = InlineKeyboardButton.builder()
-            .text("Question type 🔗")
-            .callbackData("/editquestiontype " + question.getId())
-            .build();
-        menu.keyboardRow(List.of(editTypeButton));
+        if (this.getQuestionTypeById(question.getTypeId()).getType().equals("Choose"))
+            menu.keyboardRow(
+                List.of(InlineKeyboardButton.builder()
+                .text("Check false answers 🙈")
+                .callbackData("/falseanswers " + question.getId()).build())
+            );
         return menu;
+    }
+
+    public String getFalseAnswersString(TestQuestion question) {
+        var strB = new StringBuilder();
+        strB.append("False answers: ");
+        var falseAnswers = testQuestionRepository.getFalseAnswers(question);
+        for (var ans : falseAnswers)
+            strB.append("\n" + ans);
+        return strB.toString();
     }
 
     public String getQuestionDescriptionMessage(TestQuestion question) {

@@ -7,7 +7,10 @@ import org.springframework.dao.support.DataAccessUtils;
 import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.stereotype.Repository;
 
+import com.bot.mtquizbot.models.QuestionType;
 import com.bot.mtquizbot.models.TestQuestion;
+import com.bot.mtquizbot.models.mapper.FalseAnswerMapper;
+import com.bot.mtquizbot.models.mapper.QuestionTypeMapper;
 import com.bot.mtquizbot.models.mapper.TestQuestionMapper;
 
 @Repository
@@ -23,7 +26,16 @@ public class TestQuestionRepository implements ITestQuestionRepository {
     private static final String SQL_SELECT_QUESTION_BY_ID = 
         "SELECT * FROM quizdb.test_questions WHERE id = ?";
 
+    private static final String SQL_SELECT_TYPE_LIST = "" + 
+        "SELECT * FROM quizdb.question_type";
+
+    private static final String SQL_SELECT_TYPE_BY_ID = "" + 
+        "SELECT * FROM quizdb.question_type WHERE id = ?";
+
+
+    protected final static QuestionTypeMapper QUESTION_TYPE_MAPPER = new QuestionTypeMapper();
     private static final TestQuestionMapper TEST_QUESTIONS_MAPPER = new TestQuestionMapper();
+    private static final FalseAnswerMapper FALSE_ANSWER_MAPPER = new FalseAnswerMapper();
     private final JdbcTemplate template;
 
     public TestQuestionRepository(@Qualifier("bot-db") JdbcTemplate template) {
@@ -58,6 +70,36 @@ public class TestQuestionRepository implements ITestQuestionRepository {
             question.getWeight(),
             question.getText(),
             question.getId()
+        );
+    }
+
+    @Override
+    public QuestionType getQuestionTypeById(String id) { 
+        return DataAccessUtils.singleResult(
+            template.query(SQL_SELECT_TYPE_BY_ID, QUESTION_TYPE_MAPPER, id)
+        );
+    }
+
+    @Override
+    public List<QuestionType> getQuestionTypeList() {
+        return template.query(SQL_SELECT_TYPE_LIST, QUESTION_TYPE_MAPPER);
+    }
+
+    @Override
+    public List<String> getFalseAnswers(TestQuestion question) {
+        return template.query(
+            "SELECT text FROM quizdb.question_false_answers WHERE question_id = ?",
+            FALSE_ANSWER_MAPPER,
+            question.getId()
+        );
+    }
+
+    @Override
+    public void addFalseAnswer(TestQuestion question, String answerText) {
+        template.update(
+            "INSERT INTO quizdb.question_false_answers(question_id, text) VALUES (?, ?)",
+            question.getId(),
+            answerText
         );
     }
 }
