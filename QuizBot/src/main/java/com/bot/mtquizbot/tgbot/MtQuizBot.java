@@ -352,9 +352,39 @@ public class MtQuizBot extends TelegramLongPollingBot {
             sendText(user.getLongId(), "Ooops... somethig went wrong :(" );
             return;
         }
+        botStateByUser.replace(id, BotState.idle);
         var questionFieldName = intermediateInfoByUser.get(user.getLongId()).get(IntermediateVariable.QUESTION_PROPERTY_TO_EDIT);
         questionsService.updateQuestionProperty(question, questionFieldName, propertyVal);
-        sendText(user.getLongId(), "Property value changed, go to question to check");
+        var menuB = questionsService.getQuestionEditMenu(question);
+        sendInlineMenu(id, questionsService.getQuestionDescriptionMessage(question), menuB.build());
+    }
+
+    @StateAction(BotState.waitingForNewFalseAnswer)
+    private void botWaitingForNewFalseAnswer(Update update) {
+        var msg = update.getMessage();
+        var id = msg.getFrom().getId();
+        var user = userService.getById(id);
+        if (!msg.hasText()) {
+            sendText(id, "No text");
+            return;
+        }
+        var ans = msg.getText();
+        var questionId = intermediateInfoByUser.get(user.getLongId()).get(IntermediateVariable.QUESTION_TO_EDIT);
+        questionsService.addFalseAnswer(questionsService.getQuestionById(questionId), ans);
+        var question = questionsService.getQuestionById(questionId);
+        var msgstrB = new StringBuilder();
+        msgstrB.append(questionsService.getQuestionDescriptionMessage(question));
+        msgstrB.append("\n");
+        msgstrB.append(questionsService.getFalseAnswersString(question));
+        var menu = InlineKeyboardMarkup.builder().keyboardRow(
+            List.of(InlineKeyboardButton.builder()
+                    .text("Add false answer ⭕️")
+                    .callbackData("/addfalseanswer " + questionId)
+                    .build()
+            )
+        );
+        botStateByUser.replace(id, BotState.idle);
+        sendInlineMenu(user.getLongId(), msgstrB.toString(), menu.build());
     }
 
     @CommandAction("/creategroup")
@@ -659,9 +689,50 @@ public class MtQuizBot extends TelegramLongPollingBot {
         botStateByUser.replace(user.getLongId(), BotState.waitingForNewQuestionProperty);
     }
 
-    @CommandAction("/editquestiontype")
-    private void editQuestionType(Update update) {
-        //TODO
+    @CommandAction("/falseanswers")
+    private void getFalseAnswers(Update update) {
+        if (!update.hasCallbackQuery())
+            return;
+        var query = update.getCallbackQuery();
+        var args = query.getData().split(" ");
+        var questionId = args[1];
+        var user = userService.getById(query.getFrom().getId());
+        var question = questionsService.getQuestionById(questionId);
+        if (question == null) {
+            sendText(user.getLongId(), "No question found, something went wrong");
+            return;
+        }
+        var msgstrB = new StringBuilder();
+        msgstrB.append(questionsService.getQuestionDescriptionMessage(question));
+        msgstrB.append("\n");
+        msgstrB.append(questionsService.getFalseAnswersString(question));
+        var menu = InlineKeyboardMarkup.builder().keyboardRow(
+            List.of(InlineKeyboardButton.builder()
+                    .text("Add false answer ⭕️")
+                    .callbackData("/addfalseanswer " + questionId)
+                    .build()
+            )
+        );
+        buttonTap(query, msgstrB.toString(), menu.build());
+    }
+
+    @CommandAction("/addfalseanswer")
+    private void addFalseAnswer(Update update) {
+        if (!update.hasCallbackQuery())
+            return;
+        var query = update.getCallbackQuery();
+        var args = query.getData().split(" ");
+        var questionId = args[1];
+        var user = userService.getById(query.getFrom().getId());
+        var question = questionsService.getQuestionById(questionId);
+        if (question == null) {
+            sendText(user.getLongId(), "No question found, something went wrong");
+            return;
+        }
+        deleteMsg(user.getLongId(), query.getMessage().getMessageId());
+        sendText(user.getLongId(), "Enter new false qustion");
+        botStateByUser.replace(user.getLongId(), BotState.waitingForNewFalseAnswer);
+        intermediateInfoByUser.get(user.getLongId()).put(IntermediateVariable.QUESTION_TO_EDIT, questionId);
     }
 
 
@@ -678,7 +749,7 @@ public class MtQuizBot extends TelegramLongPollingBot {
             sendText(user.getLongId(), "Sorry no such test");
             return;
         }
-        var types = testsService.getQuestionTypeList();
+        var types = questionsService.getQuestionTypeList();
         var menu = questionsService.getQuestionTypeMenuBuilder(
             types,
             MAX_QUESTIONS_TYPES_IN_MENU_ROW);
