@@ -28,6 +28,10 @@ supported Bot commands -
 
 /addquestion [testId] add question to test, *
 
+/editquestiontype [questionId] edit question type, *
+
+/addfalseanswer [questionId] add false answer to question with choose type, *
+
 /starttest [testId] [numOfQuestion] - start taking the test, *
 
 (* - called only from inline menu)
