@@ -25,7 +25,7 @@ public class BaseService {
         return result;
     }
     public <T> List<T> wrapResults(List<T> result) {
-        if(result == null || result.size() == 0)
+        if(result == null || result.isEmpty())
             throw new NotFoundException();
         return result;
     }
@@ -47,7 +47,7 @@ public class BaseService {
         return menu;
     }
 
-    protected void setNewFieldValueFromString(IModel model, String fieldName, String value) throws NoSuchFieldException {
+    protected void setNewFieldValueFromString(IModel model, String fieldName, String value) throws NoSuchFieldException, NumberFormatException  {
         var field = model.getClass().getDeclaredField(fieldName);
         field.setAccessible(true);
         var fieldType = field.getType();

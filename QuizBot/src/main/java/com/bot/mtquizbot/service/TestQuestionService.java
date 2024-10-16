@@ -94,11 +94,36 @@ public class TestQuestionService extends BaseService {
         var menu = BaseService.getEditMenuBuilder(question, "/setqfield");
         if (this.getQuestionTypeById(question.getTypeId()).getType().equals("Choose"))
             menu.keyboardRow(
-                List.of(InlineKeyboardButton.builder()
-                .text("Check false answers 🙈")
-                .callbackData("/falseanswers " + question.getId()).build())
+                List.of(
+                    InlineKeyboardButton.builder()
+                    .text("Check false answers 🙈")
+                    .callbackData("/falseanswers " + question.getId()).build()
+                )
             );
+        menu.keyboardRow(
+            List.of(
+                InlineKeyboardButton.builder()
+                .text("Back to questions 📍")
+                .callbackData("/editquestions " + question.getTestId())
+                .build()
+            )
+        );
         return menu;
+    }
+
+    public InlineKeyboardMarkupBuilder getFalseAnswersMenu(String questionId) {
+        return InlineKeyboardMarkup.builder().keyboardRow(
+            List.of(
+                InlineKeyboardButton.builder()
+                .text("Add false answer ⭕️")
+                .callbackData("/addfalseanswer " + questionId)
+                .build(),
+                InlineKeyboardButton.builder()
+                .text("Back to question ❓")
+                .callbackData("/editquestion " + questionId)
+                .build()
+            )
+        );
     }
 
     public String getFalseAnswersString(TestQuestion question) {
@@ -136,7 +161,7 @@ public class TestQuestionService extends BaseService {
         return strB.toString();
     }
 
-    public void updateQuestionProperty(TestQuestion q, String propertyName, String strVal) {
+    public void updateQuestionProperty(TestQuestion q, String propertyName, String strVal) throws NumberFormatException  {
         try {
             setNewFieldValueFromString(q, propertyName, strVal);
         } catch (NoSuchFieldException ex) {
