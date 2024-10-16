@@ -50,7 +50,7 @@ public class TestsService extends BaseService {
             .text("Questions 📌").build();
         var menu = BaseService.getEditMenuBuilder(test, "/ststfield");
         menu.keyboardRow(List.of(editQuestionsButton));
-        var backButton = InlineKeyboardButton.builder().callbackData("/backtotests").text("Back 🚫").build();
+        var backButton = InlineKeyboardButton.builder().callbackData("/test " + test.getId()).text("Back 🚫").build();
         menu.keyboardRow(List.of(backButton));
         return menu.build();
     }
@@ -83,6 +83,13 @@ public class TestsService extends BaseService {
         }
         if (buttonsInRowleft > 0)
             menu.keyboardRow(testButtons);
+        menu.keyboardRow(
+            List.of(
+                InlineKeyboardButton.builder()
+                .text("Back to group 👥")
+                .callbackData("/groupinfo").build()
+            )
+        );
         return new Pair(menu.build(), strB.toString());
     }
 
