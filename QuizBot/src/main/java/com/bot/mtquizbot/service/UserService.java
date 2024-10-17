@@ -4,7 +4,9 @@ import java.util.List;
 
 import org.springframework.stereotype.Service;
 
+import com.bot.mtquizbot.models.BotState;
 import com.bot.mtquizbot.models.User;
+import com.bot.mtquizbot.repository.IRedisRepository;
 import com.bot.mtquizbot.repository.IUserRepository;
 
 import lombok.RequiredArgsConstructor;
@@ -15,6 +17,7 @@ import lombok.extern.slf4j.Slf4j;
 @RequiredArgsConstructor
 public class UserService extends BaseService {
     protected final IUserRepository repo;
+    protected final IRedisRepository cache;
     public List<User> getUserList() {
         log.trace("#### getUserList() - working");
         return repo.getUserList();
@@ -39,6 +42,16 @@ public class UserService extends BaseService {
     public void updateGroupById(String id, String groupId) {
         log.trace("#### updateGroup_id() [group_id={}, user_id={}]", id, groupId);
         repo.updateGroupById(id, groupId);
+    }
+
+    public BotState getBotState(String userId) {
+        log.trace("#### getBotState() [userId={}]", userId);
+        return cache.getBotStateByUser(userId);
+    }
+
+    public void putBotState(String userId, BotState state) {
+        log.trace("#### putBotState() [userId={}, state={}]", userId, state.name());
+        cache.putBotState(userId, state);
     }
 
 }
