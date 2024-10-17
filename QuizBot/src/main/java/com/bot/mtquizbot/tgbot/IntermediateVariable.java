@@ -7,5 +7,5 @@ public enum IntermediateVariable {
     TEST_PROPERTY_TO_EDIT,
     QUESTION_TYPE,
     QUESTION_PROPERTY_TO_EDIT,
-    QUESTION_TO_EDIT
+    QUESTION_TO_EDIT,
 }

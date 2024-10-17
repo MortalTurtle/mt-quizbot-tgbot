@@ -110,6 +110,11 @@ public class TestQuestionService extends BaseService {
         return strB.toString();
     }
 
+    public List<String>  getFalseAnswersStringList (TestQuestion question){
+        var listFalseAnswer = testQuestionRepository.getFalseAnswers(question);
+        return listFalseAnswer;
+    }
+
     public String getQuestionDescriptionMessage(TestQuestion question) {
         return question.getText() + 
             "\nAnswer: " + question.getAnswer() + 

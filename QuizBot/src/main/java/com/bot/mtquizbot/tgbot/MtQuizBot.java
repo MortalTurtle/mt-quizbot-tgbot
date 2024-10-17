@@ -1,6 +1,7 @@
 package com.bot.mtquizbot.tgbot;
 import java.lang.reflect.InvocationTargetException;
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.function.Consumer;
@@ -387,6 +388,12 @@ public class MtQuizBot extends TelegramLongPollingBot {
         sendInlineMenu(user.getLongId(), msgstrB.toString(), menu.build());
     }
 
+
+    @StateAction(BotState.waitingForQuestionsAnswer)
+    private void botWaitingForQuestionsAnswer(Update update) {
+
+    }
+
     @CommandAction("/creategroup")
     private void CreateGroupCommand(Update update) {
         var id = update.getMessage().getFrom().getId();
@@ -529,9 +536,55 @@ public class MtQuizBot extends TelegramLongPollingBot {
 
     @CommandAction("/starttest")
     private void StartPassingTestMenuCommand(Update update) {
-        if (!update.hasCallbackQuery())
+        var query = update.getCallbackQuery();
+        if (!update.hasCallbackQuery()) {
             return;
+        }
+        var args = query.getData().split(" ");
+        var testId = args[1];
+        var test = testsService.getById(testId);
+        var user = userService.getById(query.getFrom().getId());
+        if (test == null) {
+            sendText(user.getLongId(), "Sorry, no such test.");
+            return;
+        }
+        var questions = questionsService.getQuestionsByTestId(test.getId(), 0, MAX_QUESTIONS_IN_MENU);
+        if (questions == null) {
+            sendText(user.getLongId(), "There are no questions in the test.");
+            return;
+        }
+        var group = groupService.getById(test.getGroup_id());
+        if (!group.getId().equals(user.getGroup_id())) {
+            sendText(user.getLongId(), "You are not part of this group.");
+            return;
+        }
+        var questionIndex = 0;
+        var question = questions.get(questionIndex);
+        var questionText = question.getText();
+        var questionType = question.getTypeId();
+        
+        botStateByUser.replace(user.getLongId(), BotState.waitingForQuestionsAnswer);
+
+        if ("Choose".equals(questionType)) {
+            var answers = questionsService.getFalseAnswersStringList(question);
+            answers.add(question.getAnswer()); 
+            Collections.shuffle(answers); 
+            List<List<InlineKeyboardButton>> rows = new ArrayList<>();
+            for (String answer : answers) {
+                var button = InlineKeyboardButton.builder()
+                        .text(answer)
+                        .callbackData(answer) 
+                        .build();
+                rows.add(Collections.singletonList(button));
+            }
+            var keyboard = InlineKeyboardMarkup.builder().keyboard(rows).build();
+            sendInlineMenu(user.getLongId(), questionText, keyboard);
+        } else {
+            sendText(user.getLongId(), questionText + "\nPlease enter your answer.");
+        }
     }
+
+
 
     @CommandAction("/edittest")
     private void EditTestMenuCommand(Update update) {
