@@ -2,7 +2,7 @@ package com.bot.mtquizbot.exceptions;
 import lombok.extern.slf4j.Slf4j;
 
 @Slf4j
-public class BaseException extends RuntimeException{
+public class BaseException extends Exception{
 
     public BaseException(String msg, Throwable t) {
         super(msg, t);

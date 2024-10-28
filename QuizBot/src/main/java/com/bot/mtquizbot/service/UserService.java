@@ -8,6 +8,7 @@ import com.bot.mtquizbot.models.BotState;
 import com.bot.mtquizbot.models.User;
 import com.bot.mtquizbot.repository.IRedisRepository;
 import com.bot.mtquizbot.repository.IUserRepository;
+import com.bot.mtquizbot.tgbot.IntermediateVariable;
 
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -47,6 +48,16 @@ public class UserService extends BaseService {
     public BotState getBotState(String userId) {
         log.trace("#### getBotState() [userId={}]", userId);
         return cache.getBotStateByUser(userId);
+    }
+
+    public String getIntermediateVarString(String userId, IntermediateVariable var) {
+        log.trace("#### getIntermediateVarString() [user_id={}, var={}]", userId, var);
+        return cache.getIntermediateVar(userId, var);
+    }
+
+    public void putIntermediateVar(String userId, IntermediateVariable var, String value) {
+        log.trace("#### putIntermediateVar() [user_id={}, var={}, value={}]", userId, var, value);
+        cache.putIntermediateVar(userId, var, value);
     }
 
     public void putBotState(String userId, BotState state) {
