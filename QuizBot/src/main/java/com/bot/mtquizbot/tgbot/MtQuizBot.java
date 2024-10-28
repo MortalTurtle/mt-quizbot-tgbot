@@ -21,6 +21,7 @@ import org.telegram.telegrambots.meta.api.objects.replykeyboard.InlineKeyboardMa
 import org.telegram.telegrambots.meta.api.objects.replykeyboard.buttons.InlineKeyboardButton;
 import org.telegram.telegrambots.meta.exceptions.TelegramApiException;
 
+import com.bot.mtquizbot.exceptions.NegativeNumberException;
 import com.bot.mtquizbot.models.BotState;
 import com.bot.mtquizbot.models.GroupRole;
 import com.bot.mtquizbot.models.TestGroup;
@@ -44,7 +45,6 @@ public class MtQuizBot extends TelegramLongPollingBot {
     private final TestsService testsService;
     private final TestQuestionService questionsService;
     private final HashMap<BotState, Consumer<Update>> actionByBotState = new HashMap<>();
-    private final HashMap<Long, HashMap<IntermediateVariable, String>> intermediateInfoByUser = new HashMap<>();
     private final HashMap<String, Consumer<Update>> actionByCommand = new HashMap<>();
     private final static Integer MAX_TEST_BUTTONS_IN_TESTS_MENU_ROW = 4;
     private final static Integer MAX_BUTTONS_IN_QUESTIONS_MENU_ROW = 6;
@@ -150,8 +150,6 @@ public class MtQuizBot extends TelegramLongPollingBot {
         msg = update.getMessage();
         var user = msg.getFrom();
         var id = user.getId();
-        if (!intermediateInfoByUser.containsKey(id))
-            intermediateInfoByUser.put(id, new HashMap<>());
         userService.insert(new User(Long.toString(id), user.getUserName(), null));
         var botState = userService.getBotState(Long.toString(id));
         if (botState == null) {
@@ -230,9 +228,7 @@ public class MtQuizBot extends TelegramLongPollingBot {
             return;
         }
         userService.putBotState(Long.toString(id), BotState.waitingForGroupDescription);
-        if (intermediateInfoByUser.get(id).containsKey(IntermediateVariable.GROUP_NAME))
-            intermediateInfoByUser.get(id).remove(IntermediateVariable.GROUP_NAME);
-        intermediateInfoByUser.get(id).put(IntermediateVariable.GROUP_NAME, msg.getText());
+        userService.putIntermediateVar(Long.toString(id),IntermediateVariable.GROUP_NAME, msg.getText());
         sendText(id, "Please enter group description");
     }
 
@@ -246,12 +242,11 @@ public class MtQuizBot extends TelegramLongPollingBot {
         }
         userService.putBotState(Long.toString(id), BotState.idle);
         var group = groupService.create(
-            intermediateInfoByUser.get(id).get(IntermediateVariable.GROUP_NAME),
+            userService.getIntermediateVarString(Long.toString(id),IntermediateVariable.GROUP_NAME),
             msg.getText());
         userService.updateGroupById(id, group.getId());
         roleService.addUserRole(group, userService.getById(id), GroupRole.Owner);
         actionByCommand.get("/groupinfo").accept(update);
-        intermediateInfoByUser.get(id).remove(IntermediateVariable.GROUP_NAME);
     }
 
     @StateAction(BotState.waitingForTestName)
@@ -262,9 +257,7 @@ public class MtQuizBot extends TelegramLongPollingBot {
             sendText(id, "No text for test name");
             return;
         }
-        if (intermediateInfoByUser.get(id).containsKey(IntermediateVariable.TEST_NAME))
-            intermediateInfoByUser.get(id).remove(IntermediateVariable.TEST_NAME);
-        intermediateInfoByUser.get(id).put(IntermediateVariable.TEST_NAME, msg.getText());
+        userService.putIntermediateVar(Long.toString(id),IntermediateVariable.TEST_NAME, msg.getText());
         sendText(id, "Please enter a test description");
         userService.putBotState(Long.toString(id), BotState.waitingForTestDescription);
     }
@@ -280,11 +273,10 @@ public class MtQuizBot extends TelegramLongPollingBot {
         var user = userService.getById(id);
         testsService.create(user,
             groupService.getUserGroup(user),
-            intermediateInfoByUser.get(user.getLongId()).get(IntermediateVariable.TEST_NAME),
+            userService.getIntermediateVarString(user.getId(),IntermediateVariable.TEST_NAME),
             null,
             msg.getText()
         );
-        intermediateInfoByUser.get(user.getLongId()).remove(IntermediateVariable.TEST_NAME);
         userService.putBotState(Long.toString(id), BotState.idle);
         sendText(id,"Test created succesefully, go to /tests to add questions to your test");
     }
@@ -298,10 +290,8 @@ public class MtQuizBot extends TelegramLongPollingBot {
             sendText(id, "No text");
             return;
         }
-        var testId = intermediateInfoByUser.get(user.getLongId()).get(IntermediateVariable.TEST_TO_EDIT);
-        var property = intermediateInfoByUser.get(user.getLongId()).get(IntermediateVariable.TEST_PROPERTY_TO_EDIT);
-        intermediateInfoByUser.get(user.getLongId()).remove(IntermediateVariable.TEST_PROPERTY_TO_EDIT);
-        intermediateInfoByUser.get(user.getLongId()).remove(IntermediateVariable.TEST_TO_EDIT);
+        var testId = userService.getIntermediateVarString(user.getId(),IntermediateVariable.TEST_TO_EDIT);
+        var property = userService.getIntermediateVarString(user.getId(),IntermediateVariable.TEST_PROPERTY_TO_EDIT);
         var test = testsService.getById(testId);
         if (test == null ) {
             userService.putBotState(user.getId(), BotState.idle);
@@ -309,8 +299,13 @@ public class MtQuizBot extends TelegramLongPollingBot {
         }
         try {
             testsService.updateTestProperty(test, property , msg.getText());
+            if (test.getMin_score() < 0)
+                throw new NegativeNumberException("");
         } catch (NumberFormatException e) {
             sendText(user.getLongId(), "Oops... Something went wrong, maybe wrong input format?");
+            return;
+        } catch (NegativeNumberException e) {
+            sendText(user.getLongId(), "Oops... Something went wrong, negative number is not allowed");
             return;
         } catch (NoSuchFieldException | IllegalArgumentException ex) {
             throw new RuntimeException(ex);
@@ -332,8 +327,8 @@ public class MtQuizBot extends TelegramLongPollingBot {
             return;
         }
         var questionText = msg.getText();
-        var testId = intermediateInfoByUser.get(user.getLongId()).get(IntermediateVariable.TEST_TO_EDIT);
-        var questionType = intermediateInfoByUser.get(user.getLongId()).get(IntermediateVariable.QUESTION_TYPE);
+        var testId = userService.getIntermediateVarString(user.getId(),IntermediateVariable.TEST_TO_EDIT);
+        var questionType = userService.getIntermediateVarString(user.getId(),IntermediateVariable.QUESTION_TYPE);
         var question = questionsService.addQuestion(testId ,questionType, 0, questionText);
         userService.putBotState(Long.toString(id), BotState.idle);
         var questions = questionsService.getQuestionsByTestId(question.getTestId(), 0, MAX_QUESTIONS_IN_MENU);
@@ -353,15 +348,20 @@ public class MtQuizBot extends TelegramLongPollingBot {
             return;
         }
         var propertyVal = msg.getText();
-        var questionId = intermediateInfoByUser.get(user.getLongId()).get(IntermediateVariable.QUESTION_TO_EDIT);
+        var questionId = userService.getIntermediateVarString(user.getId(),IntermediateVariable.QUESTION_TO_EDIT);
         var question = questionsService.getQuestionById(questionId);
         if (question == null) {
             sendText(user.getLongId(), "Ooops... somethig went wrong :(" );
             return;
         }
-        var questionFieldName = intermediateInfoByUser.get(user.getLongId()).get(IntermediateVariable.QUESTION_PROPERTY_TO_EDIT);
+        var questionFieldName = userService.getIntermediateVarString(user.getId(),IntermediateVariable.QUESTION_PROPERTY_TO_EDIT);
         try {
-        questionsService.updateQuestionProperty(question, questionFieldName, propertyVal);
+            questionsService.updateQuestionProperty(question, questionFieldName, propertyVal);
+            if (question.getWeight() < 0)
+                throw new NegativeNumberException("");
+        } catch (NegativeNumberException e) {
+            sendText(user.getLongId(), "Oops... Something went wrong, negative number is not allowed");
+            return;
         } catch (NumberFormatException ex) {
             sendText(user.getLongId(), "Wrong number format try again ^_^");
             return;
@@ -381,7 +381,7 @@ public class MtQuizBot extends TelegramLongPollingBot {
             return;
         }
         var ans = msg.getText();
-        var questionId = intermediateInfoByUser.get(user.getLongId()).get(IntermediateVariable.QUESTION_TO_EDIT);
+        var questionId = userService.getIntermediateVarString(user.getId(),IntermediateVariable.QUESTION_TO_EDIT);
         questionsService.addFalseAnswer(questionsService.getQuestionById(questionId), ans);
         var question = questionsService.getQuestionById(questionId);
         var msgstrB = new StringBuilder();
@@ -610,8 +610,8 @@ public class MtQuizBot extends TelegramLongPollingBot {
         }
         var property = args[2];
         userService.putBotState(user.getId(), BotState.waitingForNewTestProperty);
-        intermediateInfoByUser.get(user.getLongId()).put(IntermediateVariable.TEST_TO_EDIT, test.getId());
-        intermediateInfoByUser.get(user.getLongId()).put(IntermediateVariable.TEST_PROPERTY_TO_EDIT, property);
+        userService.putIntermediateVar(user.getId(),IntermediateVariable.TEST_TO_EDIT, test.getId());
+        userService.putIntermediateVar(user.getId(),IntermediateVariable.TEST_PROPERTY_TO_EDIT, property);
         sendText(user.getLongId(), "Please enter new property value");
     }
 
@@ -705,10 +705,8 @@ public class MtQuizBot extends TelegramLongPollingBot {
         }
         var field = args[2];
         deleteMsg(user.getLongId(), query.getMessage().getMessageId());
-        intermediateInfoByUser.get(user.getLongId())
-            .put(IntermediateVariable.QUESTION_PROPERTY_TO_EDIT, field);
-        intermediateInfoByUser.get(user.getLongId())
-            .put(IntermediateVariable.QUESTION_TO_EDIT, questionId);
+        userService.putIntermediateVar(user.getId(),IntermediateVariable.QUESTION_PROPERTY_TO_EDIT, field);
+        userService.putIntermediateVar(user.getId(),IntermediateVariable.QUESTION_TO_EDIT, questionId);
         sendText(user.getLongId(), "Please enter a new value");
         userService.putBotState(user.getId(), BotState.waitingForNewQuestionProperty);
     }
@@ -749,7 +747,7 @@ public class MtQuizBot extends TelegramLongPollingBot {
         deleteMsg(user.getLongId(), query.getMessage().getMessageId());
         sendText(user.getLongId(), "Enter new false qustion");
         userService.putBotState(user.getId(), BotState.waitingForNewFalseAnswer);
-        intermediateInfoByUser.get(user.getLongId()).put(IntermediateVariable.QUESTION_TO_EDIT, questionId);
+        userService.putIntermediateVar(user.getId(),IntermediateVariable.QUESTION_TO_EDIT, questionId);
     }
 
 
@@ -770,8 +768,7 @@ public class MtQuizBot extends TelegramLongPollingBot {
         var menu = questionsService.getQuestionTypeMenuBuilder(
             types,
             MAX_QUESTIONS_TYPES_IN_MENU_ROW);
-        var info = intermediateInfoByUser.get(user.getLongId());
-        info.put(IntermediateVariable.TEST_TO_EDIT, test.getId());
+        userService.putIntermediateVar(user.getId(),IntermediateVariable.TEST_TO_EDIT, test.getId());
         buttonTap(query, questionsService.getQuestionTypeDescriptionMessage(types), menu.build());
     }
 
@@ -784,7 +781,7 @@ public class MtQuizBot extends TelegramLongPollingBot {
         var typeId = args[1];
         var user = userService.getById(query.getFrom().getId());
         deleteMsg(user.getLongId(), query.getMessage().getMessageId());
-        intermediateInfoByUser.get(user.getLongId()).put(IntermediateVariable.QUESTION_TYPE, typeId);
+        userService.putIntermediateVar(user.getId(), IntermediateVariable.QUESTION_TYPE, typeId);
         sendText(user.getLongId(), "Please enter a question text");
         userService.putBotState(user.getId(), BotState.waitingForQuestionText);
     }

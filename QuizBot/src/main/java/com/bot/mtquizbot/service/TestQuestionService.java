@@ -137,7 +137,7 @@ public class TestQuestionService extends BaseService {
 
     public String getQuestionDescriptionMessage(TestQuestion question) {
         return question.getText() + 
-            "\nAnswer: " + question.getAnswer() + 
+            "\nAnswer: " + (question.getAnswer() == null ? "No answer, please add one" : question.getAnswer()) + 
             "\nWeight: " + Integer.toString(question.getWeight());
     }
 
