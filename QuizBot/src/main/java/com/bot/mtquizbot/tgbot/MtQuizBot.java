@@ -584,7 +584,7 @@ public class MtQuizBot extends TelegramLongPollingBot {
         var questionText = question.getText();
         var questionType = question.getTypeId();
         
-        botStateByUser.replace(user.getLongId(), BotState.waitingForQuestionsAnswer);
+        userService.putBotState(user.getId(), BotState.waitingForQuestionsAnswer);
 
         if ("Choose".equals(questionType)) {
             var answers = questionsService.getFalseAnswersStringList(question);
