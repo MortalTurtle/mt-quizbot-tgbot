@@ -1,10 +1,15 @@
 HELP.md
 .gradle
 build/
+QuizBot/gradle/
+QuizBot/gradlew
+QuizBot/gradlew.bat
 .github
 !gradle/wrapper/gradle-wrapper.jar
 !**/src/main/**/build/
 !**/src/test/**/build/
+.redisdata
+.pgdata
 
 ### STS ###
 .apt_generated

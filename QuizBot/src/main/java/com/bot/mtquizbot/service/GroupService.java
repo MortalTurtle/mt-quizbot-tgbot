@@ -1,5 +1,6 @@
 package com.bot.mtquizbot.service;
 
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
 import com.bot.mtquizbot.models.TestGroup;
@@ -11,7 +12,7 @@ import lombok.extern.slf4j.Slf4j;
 
 @Service
 @Slf4j
-@RequiredArgsConstructor
+@RequiredArgsConstructor(onConstructor = @__(@Autowired))
 public class GroupService extends BaseService {
     protected final IGroupRepository repo;
 

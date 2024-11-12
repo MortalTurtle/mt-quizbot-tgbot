@@ -10,12 +10,14 @@ services:
       - "8081:8081"
     depends_on:
       - postgres
+      - redis
     environment:
       - SERVER_PORT= 8080
       - SPRING_DATASOURCE_URL=jdbc:postgresql://postgres/quiz_db_1
       - JAVA_TOOL_OPTIONS=-agentlib:jdwp=transport=dt_socket,address=*:8081,server=y,suspend=n
     networks:
       - postgres
+      - redis
 
   postgres:
     image: postgres:14.7-alpine
@@ -32,6 +34,18 @@ services:
     networks:
       - postgres
 
+  redis:
+    image: redis:alpine
+    container_name: redis
+    ports:
+     - 6379
+    volumes:
+      - ./.redisdata:/data
+    networks:
+      - redis
+
 networks:
     postgres:
+        driver: bridge
+    redis:
         driver: bridge

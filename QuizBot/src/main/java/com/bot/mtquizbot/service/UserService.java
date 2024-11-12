@@ -4,8 +4,11 @@ import java.util.List;
 
 import org.springframework.stereotype.Service;
 
+import com.bot.mtquizbot.models.BotState;
 import com.bot.mtquizbot.models.User;
+import com.bot.mtquizbot.repository.IRedisRepository;
 import com.bot.mtquizbot.repository.IUserRepository;
+import com.bot.mtquizbot.tgbot.IntermediateVariable;
 
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -15,6 +18,7 @@ import lombok.extern.slf4j.Slf4j;
 @RequiredArgsConstructor
 public class UserService extends BaseService {
     protected final IUserRepository repo;
+    protected final IRedisRepository cache;
     public List<User> getUserList() {
         log.trace("#### getUserList() - working");
         return repo.getUserList();
@@ -39,6 +43,26 @@ public class UserService extends BaseService {
     public void updateGroupById(String id, String groupId) {
         log.trace("#### updateGroup_id() [group_id={}, user_id={}]", id, groupId);
         repo.updateGroupById(id, groupId);
+    }
+
+    public BotState getBotState(String userId) {
+        log.trace("#### getBotState() [userId={}]", userId);
+        return cache.getBotStateByUser(userId);
+    }
+
+    public String getIntermediateVarString(String userId, IntermediateVariable var) {
+        log.trace("#### getIntermediateVarString() [user_id={}, var={}]", userId, var);
+        return cache.getIntermediateVar(userId, var);
+    }
+
+    public void putIntermediateVar(String userId, IntermediateVariable var, String value) {
+        log.trace("#### putIntermediateVar() [user_id={}, var={}, value={}]", userId, var, value);
+        cache.putIntermediateVar(userId, var, value);
+    }
+
+    public void putBotState(String userId, BotState state) {
+        log.trace("#### putBotState() [userId={}, state={}]", userId, state.name());
+        cache.putBotState(userId, state);
     }
 
 }

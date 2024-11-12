@@ -7,7 +7,6 @@ import org.telegram.telegrambots.meta.api.objects.replykeyboard.InlineKeyboardMa
 import org.telegram.telegrambots.meta.api.objects.replykeyboard.InlineKeyboardMarkup.InlineKeyboardMarkupBuilder;
 import org.telegram.telegrambots.meta.api.objects.replykeyboard.buttons.InlineKeyboardButton;
 
-import com.bot.mtquizbot.exceptions.NotFoundException;
 import com.bot.mtquizbot.models.CanEditObjectField;
 import com.bot.mtquizbot.models.IModel;
 
@@ -17,17 +16,6 @@ public class BaseService {
     public BaseService() {
         convertStringValueToSomeClass.put(String.class, (String str) -> str);
         convertStringValueToSomeClass.put(Integer.class, (String str) -> Integer.valueOf(str));
-    }
-
-    public <T> T wrapResult(T result) {
-        if(result == null)
-            throw new NotFoundException();
-        return result;
-    }
-    public <T> List<T> wrapResults(List<T> result) {
-        if(result == null || result.size() == 0)
-            throw new NotFoundException();
-        return result;
     }
 
     public static InlineKeyboardMarkupBuilder getEditMenuBuilder(IModel obj, String command) {
@@ -47,7 +35,7 @@ public class BaseService {
         return menu;
     }
 
-    protected void setNewFieldValueFromString(IModel model, String fieldName, String value) throws NoSuchFieldException {
+    protected void setNewFieldValueFromString(IModel model, String fieldName, String value) throws NoSuchFieldException, NumberFormatException  {
         var field = model.getClass().getDeclaredField(fieldName);
         field.setAccessible(true);
         var fieldType = field.getType();

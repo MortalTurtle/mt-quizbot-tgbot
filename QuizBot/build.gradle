@@ -9,7 +9,7 @@ version = '0.0.1-SNAPSHOT'
 
 java {
 	toolchain {
-		languageVersion = JavaLanguageVersion.of(22)
+		languageVersion = JavaLanguageVersion.of(21)
 	}
 }
 
@@ -25,6 +25,8 @@ dependencies {
 
 	implementation 'org.postgresql:postgresql:42.3.1'
 	implementation 'com.h2database:h2:1.4.200'
+	implementation group: 'org.springframework.boot', name: 'spring-boot-starter-data-redis', version: '3.3.4'
+	implementation group: 'redis.clients', name: 'jedis', version: '5.1.5'
 
 	implementation 'org.springframework.boot:spring-boot-starter-jdbc:2.5.6'
 	testImplementation 'org.springframework.boot:spring-boot-starter-test'

@@ -1,14 +1,15 @@
 package com.bot.mtquizbot.config;
 
-import lombok.Data;
-import lombok.NoArgsConstructor;
+import javax.sql.DataSource;
+
 import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.boot.context.properties.ConfigurationProperties;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.jdbc.core.JdbcTemplate;
 
-import javax.sql.DataSource;
+import lombok.Data;
+import lombok.NoArgsConstructor;
 
 @Configuration
 public class DbConfig extends DefaultDbConfig {
