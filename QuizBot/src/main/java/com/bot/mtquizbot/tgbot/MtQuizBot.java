@@ -399,7 +399,7 @@ public class MtQuizBot extends TelegramLongPollingBot {
 
     @StateAction(BotState.waitingForQuestionsAnswer)
     private void botWaitingForQuestionsAnswer(Update update) {
-
+        // TODO: implement 
     }
 
     @CommandAction("/creategroup")
@@ -579,14 +579,13 @@ public class MtQuizBot extends TelegramLongPollingBot {
             sendText(user.getLongId(), "You are not part of this group.");
             return;
         }
+        userService.putQuestionsId(testId, questions);
+        
         var questionIndex = 0;
         var question = questions.get(questionIndex);
         var questionText = question.getText();
-        var questionType = question.getTypeId();
-        
-        userService.putBotState(user.getId(), BotState.waitingForQuestionsAnswer);
-
-        if ("Choose".equals(questionType)) {
+        var questionType = questionsService.getQuestionTypeById(question.getTypeId());
+        if ("Choose".equals(questionType.getType())) {
             var answers = questionsService.getFalseAnswersStringList(question);
             answers.add(question.getAnswer()); 
             Collections.shuffle(answers); 
@@ -594,16 +593,65 @@ public class MtQuizBot extends TelegramLongPollingBot {
             for (String answer : answers) {
                 var button = InlineKeyboardButton.builder()
                         .text(answer)
-                        .callbackData(answer) 
+                        .callbackData("/continuetest " + String.valueOf(questionIndex+1) + " " + answer) 
                         .build();
                 rows.add(Collections.singletonList(button));
             }
             var keyboard = InlineKeyboardMarkup.builder().keyboard(rows).build();
-            sendInlineMenu(user.getLongId(), questionText, keyboard);
+            buttonTap(query, questionText, keyboard);
         } else {
+            userService.putBotState(user.getId(), BotState.waitingForQuestionsAnswer);
             sendText(user.getLongId(), questionText + "\nPlease enter your answer.");
+
         }
     }
+
+    @CommandAction("/continuetest")
+    private void continueTest(Update update){
+        var query = update.getCallbackQuery();
+        if (!update.hasCallbackQuery()) {
+            return;
+        }
+        
+        var args = query.getData().split(" ");
+        var user = userService.getById(query.getFrom().getId());
+        var questionIndex = Integer.valueOf(args[1]);
+        var answerOnPrevQuestion = args[2];
+        var questionPrevId = userService.getQuestionId(user.getId(), questionIndex);
+        var question = questionsService.getQuestionById(questionPrevId);
+        var correctAnswer = question.getAnswer();
+        if(answerOnPrevQuestion == correctAnswer){
+            userService.putUserScore(user.getId(),
+                                    question.getTestId(),
+                                    userService.getUserScore(user.getId(),
+                                                            question.getTestId())
+                                    + question.getWeight());
+        }
+        var questionId = userService.getQuestionId(user.getId(), questionIndex);
+        question = questionsService.getQuestionById(questionId);
+        var questionText = question.getText();
+        var questionType = questionsService.getQuestionTypeById(question.getTypeId());
+        if ("Choose".equals(questionType.getType())) {
+            var answers = questionsService.getFalseAnswersStringList(question);
+            answers.add(question.getAnswer()); 
+            Collections.shuffle(answers); 
+            List<List<InlineKeyboardButton>> rows = new ArrayList<>();
+            for (String answer : answers) {
+                var button = InlineKeyboardButton.builder()
+                        .text(answer)
+                        .callbackData("/continuetest " + String.valueOf(questionIndex+1) + " " + answer) 
+                        .build();
+                rows.add(Collections.singletonList(button));
+            }
+            var keyboard = InlineKeyboardMarkup.builder().keyboard(rows).build();
+            buttonTap(query, questionText, keyboard);
+        } else {
+            userService.putBotState(user.getId(), BotState.waitingForQuestionsAnswer);
+            sendText(user.getLongId(), questionText + "\nPlease enter your answer.");
+        }
+
+    }
+    
 
 
 

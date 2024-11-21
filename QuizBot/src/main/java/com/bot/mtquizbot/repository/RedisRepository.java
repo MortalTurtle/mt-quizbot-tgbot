@@ -1,6 +1,7 @@
 package com.bot.mtquizbot.repository;
 
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 
 import org.springframework.beans.factory.annotation.Autowired;
@@ -9,6 +10,7 @@ import org.springframework.data.redis.core.RedisTemplate;
 import org.springframework.stereotype.Repository;
 
 import com.bot.mtquizbot.models.BotState;
+import com.bot.mtquizbot.models.TestQuestion;
 import com.bot.mtquizbot.tgbot.IntermediateVariable;
 
 import jakarta.annotation.PostConstruct;
@@ -38,6 +40,28 @@ public class RedisRepository implements IRedisRepository {
     @Override
     public void putIntermediateVar(String userId, IntermediateVariable varKey, String value) {
         hashOperations.put(userId, varKey.name(), value);
+    }
+
+    @Override
+    public void putQuestionsId(String userId, List<TestQuestion> questions){
+        for(int i = 1; i <= questions.size(); i++){
+            hashOperations.put(userId, i, questions.get(i - 1).getId());
+        }
+    }
+
+    @Override
+    public String getQuestionId(String userId, Integer index){
+        return (String) hashOperations.get(userId, index);
+    }
+
+    @Override
+    public Integer getUserScore(String userId, String testId){
+        return Integer.valueOf((String) hashOperations.get(userId, testId));
+    }
+
+    @Override
+    public void putUserScore(String userId, String testId, Integer score){
+        hashOperations.put(userId,  testId, score);
     }
 
     @Override
