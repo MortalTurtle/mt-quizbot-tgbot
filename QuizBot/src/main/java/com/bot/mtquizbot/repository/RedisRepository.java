@@ -18,7 +18,7 @@ import jakarta.annotation.PostConstruct;
 @Repository
 public class RedisRepository implements IRedisRepository {
     private RedisTemplate<String, Object> redisTemplate;
-    private HashOperations hashOperations;    
+    private HashOperations<String, String, String> hashOperations;    
     private static Map<String, BotState> stateByName;
     private static final String BOT_STATE_KEY = "bot_state";
     @Autowired
@@ -44,24 +44,24 @@ public class RedisRepository implements IRedisRepository {
 
     @Override
     public void putQuestionsId(String userId, List<TestQuestion> questions){
-        for(int i = 1; i <= questions.size(); i++){
-            hashOperations.put(userId, i, questions.get(i - 1).getId());
+        for(int i = 0; i < questions.size(); i++){
+            hashOperations.put(userId, Integer.toString(i), questions.get(i).getId());
         }
     }
 
     @Override
     public String getQuestionId(String userId, Integer index){
-        return (String) hashOperations.get(userId, index);
+        return hashOperations.get(userId, Integer.toString(index));
     }
 
     @Override
     public Integer getUserScore(String userId, String testId){
-        return Integer.valueOf((String) hashOperations.get(userId, testId));
+        return Integer.valueOf(hashOperations.get(userId, testId));
     }
 
     @Override
     public void putUserScore(String userId, String testId, Integer score){
-        hashOperations.put(userId,  testId, score);
+        hashOperations.put(userId,  testId, Integer.toString(score));
     }
 
     @Override
