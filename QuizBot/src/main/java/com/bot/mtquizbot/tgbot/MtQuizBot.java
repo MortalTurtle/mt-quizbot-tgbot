@@ -135,6 +135,24 @@ public class MtQuizBot extends TelegramLongPollingBot {
         }
     }
 
+    private void handleQuestionWhileTestPassing(CallbackQuery query, User user, int questionIndex) {
+        var questionId = userService.getQuestionId(user.getId(), questionIndex);
+        var question = questionsService.getQuestionById(questionId);
+        var questionText = question.getText();
+        var questionType = questionsService.getQuestionTypeById(question.getTypeId());
+        InlineKeyboardMarkup keyboard = null;
+        if ("Choose".equals(questionType.getType())) {
+            keyboard = questionsService.getChooseQuestionMenu(question, questionIndex).build();
+        } else {
+            deleteMsg(user.getLongId(), query.getMessage().getMessageId());
+            userService.putBotState(user.getId(), BotState.waitingForQuestionsAnswer);
+            questionText += "\nPlease enter your answer.";
+        }
+        if (query != null)
+            buttonTap(query, questionText, keyboard);
+        else sendInlineMenu(user.getLongId(), questionText, keyboard);
+    }
+
     @Override
     public void onUpdateReceived(Update update) {
         Message msg;
@@ -554,12 +572,13 @@ public class MtQuizBot extends TelegramLongPollingBot {
             menu.build());
     }
 
+    // args: [testId]
     @CommandAction("/starttest")
     private void StartPassingTestMenuCommand(Update update) {
-        var query = update.getCallbackQuery();
         if (!update.hasCallbackQuery()) {
             return;
         }
+        var query = update.getCallbackQuery();
         var args = query.getData().split(" ");
         var testId = args[1];
         var test = testsService.getById(testId);
@@ -580,18 +599,10 @@ public class MtQuizBot extends TelegramLongPollingBot {
         }
         userService.putQuestionsId(user.getId(), questions);
         userService.putUserScore(user.getId(), testId, 0);
-        var question = questions.get(0);
-        var questionText = question.getText();
-        var questionType = questionsService.getQuestionTypeById(question.getTypeId());
-        if ("Choose".equals(questionType.getType())) {
-            var keyboard = questionsService.getChooseQuestionMenu(question, 0).build();
-            buttonTap(query, questionText, keyboard);
-        } else {
-            userService.putBotState(user.getId(), BotState.waitingForQuestionsAnswer);
-            sendText(user.getLongId(), questionText + "\nPlease enter your answer.");
-        }
+        handleQuestionWhileTestPassing(query, user, 0);
     }
 
+    // args [questionIdxTohandle] [answerOnPrevQuestion]
     @CommandAction("/continuetest")
     private void continueTest(Update update){
         var query = update.getCallbackQuery();
@@ -613,18 +624,7 @@ public class MtQuizBot extends TelegramLongPollingBot {
                                                             question.getTestId())
                                     + question.getWeight());
         }
-        var questionId = userService.getQuestionId(user.getId(), questionIndex);
-        question = questionsService.getQuestionById(questionId);
-        var questionText = question.getText();
-        var questionType = questionsService.getQuestionTypeById(question.getTypeId());
-        if ("Choose".equals(questionType.getType())) {
-            var keyboard = questionsService.getChooseQuestionMenu(question, questionIndex).build();
-            buttonTap(query, questionText, keyboard);
-        } else {
-            userService.putBotState(user.getId(), BotState.waitingForQuestionsAnswer);
-            sendText(user.getLongId(), questionText + "\nPlease enter your answer.");
-        }
-
+        handleQuestionWhileTestPassing(query, user, questionIndex);
     }
     
 
@@ -651,7 +651,7 @@ public class MtQuizBot extends TelegramLongPollingBot {
         var role = roleService.getUserRole(user, group);
         if (role == GroupRole.Participant ||
             role == GroupRole.Contributor &&
-            test.getOwner_id() != user.getId()) {
+            !test.getOwner_id().equals(user.getId())) {
             sendText(user.getLongId(), "You have no rights to edit this test, sry I guess :(");
             return;
         }
@@ -680,7 +680,7 @@ public class MtQuizBot extends TelegramLongPollingBot {
         var role = roleService.getUserRole(user, group);
         if (role == GroupRole.Participant ||
             role == GroupRole.Contributor &&
-            test.getOwner_id() != user.getId()) {
+            !test.getOwner_id().equals(user.getId())) {
             sendText(user.getLongId(), "You have no rights to edit this test, sry I guess :(");
             return;
         }
