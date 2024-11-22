@@ -21,6 +21,7 @@ public class RedisRepository implements IRedisRepository {
     private HashOperations<String, String, String> hashOperations;    
     private static Map<String, BotState> stateByName;
     private static final String BOT_STATE_KEY = "bot_state";
+    private static final String CURR_Q_NUM_KEY = "question_num";
     @Autowired
     public RedisRepository(RedisTemplate<String, Object> redisTemplate){
         this.redisTemplate = redisTemplate;
@@ -47,6 +48,16 @@ public class RedisRepository implements IRedisRepository {
         for(int i = 0; i < questions.size(); i++){
             hashOperations.put(userId, Integer.toString(i), questions.get(i).getId());
         }
+    }
+
+    @Override
+    public void putCurrentQuestionNum(String userId, Integer num){
+        hashOperations.put(userId, CURR_Q_NUM_KEY, num.toString());
+    }
+
+    @Override
+    public Integer getCurrentQuestionNum(String userId){
+        return Integer.valueOf(hashOperations.get(userId,CURR_Q_NUM_KEY));
     }
 
     @Override

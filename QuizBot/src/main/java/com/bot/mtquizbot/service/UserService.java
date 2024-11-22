@@ -86,4 +86,14 @@ public class UserService extends BaseService {
         cache.putUserScore(userId, testId, score);
     }
 
+    public void putCurrentQuestionNum(String userId,Integer num){
+        log.trace("#### putCurrentQuestionNum() [user_id={}, num={}]", userId, num);
+        cache.putCurrentQuestionNum(userId, num);
+    }
+
+    public Integer getCurrentQuestionNum(String userId){
+        log.trace("#### getCurrentQuestionNum() [user_id={}]", userId);
+        return cache.getCurrentQuestionNum(userId);
+    }
+
 }

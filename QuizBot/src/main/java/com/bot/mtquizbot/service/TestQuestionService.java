@@ -176,7 +176,7 @@ public class TestQuestionService extends BaseService {
         testQuestionRepository.updateTestQuestion(q);
     }
 
-    public InlineKeyboardMarkupBuilder getChooseQuestionMenu(TestQuestion question, Integer secNum) {
+    public InlineKeyboardMarkupBuilder getChooseQuestionMenu(TestQuestion question) {
         var answers = getFalseAnswersStringList(question);
         answers.add(question.getAnswer()); 
         Collections.shuffle(answers); 
@@ -184,7 +184,7 @@ public class TestQuestionService extends BaseService {
         for (String answer : answers) {
             var button = InlineKeyboardButton.builder()
                     .text(answer)
-                    .callbackData("/continuetest " + String.valueOf(secNum+1) + " " + answer) 
+                    .callbackData("/continuetest " + answer) 
                     .build();
             rows.add(Collections.singletonList(button));
         }

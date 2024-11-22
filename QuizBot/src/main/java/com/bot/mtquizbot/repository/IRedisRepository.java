@@ -15,4 +15,6 @@ public interface IRedisRepository {
     String getQuestionId(String userId, Integer index);
     Integer getUserScore(String userId, String testId);
     void putUserScore(String userId, String testId, Integer score);
+    void putCurrentQuestionNum(String userId, Integer num);
+    Integer getCurrentQuestionNum(String userId);
 }

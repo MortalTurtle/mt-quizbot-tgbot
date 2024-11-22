@@ -140,17 +140,17 @@ public class MtQuizBot extends TelegramLongPollingBot {
         var question = questionsService.getQuestionById(questionId);
         var questionText = question.getText();
         var questionType = questionsService.getQuestionTypeById(question.getTypeId());
-        InlineKeyboardMarkup keyboard = null;
+        InlineKeyboardMarkup keyboard = InlineKeyboardMarkup.builder().build();
         if ("Choose".equals(questionType.getType())) {
-            keyboard = questionsService.getChooseQuestionMenu(question, questionIndex).build();
+            keyboard = questionsService.getChooseQuestionMenu(question).build();
         } else {
-            deleteMsg(user.getLongId(), query.getMessage().getMessageId());
             userService.putBotState(user.getId(), BotState.waitingForQuestionsAnswer);
             questionText += "\nPlease enter your answer.";
         }
         if (query != null)
             buttonTap(query, questionText, keyboard);
         else sendInlineMenu(user.getLongId(), questionText, keyboard);
+        userService.putCurrentQuestionNum(user.getId(), questionIndex);
     }
 
     @Override
@@ -417,6 +417,23 @@ public class MtQuizBot extends TelegramLongPollingBot {
     @StateAction(BotState.waitingForQuestionsAnswer)
     private void botWaitingForQuestionsAnswer(Update update) {
         // TODO: implement 
+        var msg = update.getMessage();
+        var user = userService.getById(msg.getFrom().getId());
+        var questionIndex = userService.getCurrentQuestionNum(user.getId());
+        var questionId = userService.getQuestionId(user.getId(),questionIndex);
+        var question = questionsService.getQuestionById(questionId);
+        if (!msg.hasText()){
+            sendText(user.getLongId(), "No text in message, please write your answer");
+            return;
+        }
+        if (question.getAnswer().toLowerCase().equals(msg.getText().toLowerCase())){
+            userService.putUserScore(user.getId(),
+                                    question.getTestId(),
+                                    userService.getUserScore(user.getId(),
+                                                            question.getTestId())
+                                    + question.getWeight());
+        }
+        handleQuestionWhileTestPassing(null, user, questionIndex + 1);
     }
 
     @CommandAction("/creategroup")
@@ -602,7 +619,7 @@ public class MtQuizBot extends TelegramLongPollingBot {
         handleQuestionWhileTestPassing(query, user, 0);
     }
 
-    // args [questionIdxTohandle] [answerOnPrevQuestion]
+    // args [answerOnPrevQuestion]
     @CommandAction("/continuetest")
     private void continueTest(Update update){
         var query = update.getCallbackQuery();
@@ -612,24 +629,21 @@ public class MtQuizBot extends TelegramLongPollingBot {
         
         var args = query.getData().split(" ");
         var user = userService.getById(query.getFrom().getId());
-        var questionIndex = Integer.parseInt(args[1]);
-        var answerOnPrevQuestion = args[2];
-        var questionPrevId = userService.getQuestionId(user.getId(), questionIndex - 1);
-        var question = questionsService.getQuestionById(questionPrevId);
+        var questionIndex = userService.getCurrentQuestionNum(user.getId());
+        var answerOnPrevQuestion = args[1];
+        var questionId = userService.getQuestionId(user.getId(), questionIndex);
+        var question = questionsService.getQuestionById(questionId);
         var correctAnswer = question.getAnswer();
-        if(answerOnPrevQuestion.equals(correctAnswer)){
+        if(answerOnPrevQuestion.toLowerCase().equals(correctAnswer.toLowerCase())){
             userService.putUserScore(user.getId(),
                                     question.getTestId(),
                                     userService.getUserScore(user.getId(),
                                                             question.getTestId())
                                     + question.getWeight());
         }
-        handleQuestionWhileTestPassing(query, user, questionIndex);
+        handleQuestionWhileTestPassing(query, user, questionIndex + 1);
     }
     
-
-
-
     @CommandAction("/edittest")
     private void EditTestMenuCommand(Update update) {
         if (!update.hasCallbackQuery())
