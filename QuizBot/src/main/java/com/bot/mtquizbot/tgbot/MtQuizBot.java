@@ -138,6 +138,10 @@ public class MtQuizBot extends TelegramLongPollingBot {
     private void handleQuestionWhileTestPassing(CallbackQuery query, User user, int questionIndex) {
         var questionId = userService.getQuestionId(user.getId(), questionIndex);
         var question = questionsService.getQuestionById(questionId);
+        if (question == null && userService.getQuestionId(user.getId(), questionIndex - 1) == null) {
+            handleTestEnding(user, questionId);
+            return;
+        }
         var questionText = question.getText();
         var questionType = questionsService.getQuestionTypeById(question.getTypeId());
         InlineKeyboardMarkup keyboard = InlineKeyboardMarkup.builder().build();
@@ -151,6 +155,11 @@ public class MtQuizBot extends TelegramLongPollingBot {
             buttonTap(query, questionText, keyboard);
         else sendInlineMenu(user.getLongId(), questionText, keyboard);
         userService.putCurrentQuestionNum(user.getId(), questionIndex);
+    }
+
+    private void handleTestEnding(User user, String testId) {
+        // TODO: implement
+        var score = userService.getUserScore(user.getId(), testId);
     }
 
     @Override
