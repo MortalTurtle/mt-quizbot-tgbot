@@ -138,13 +138,13 @@ public class MtQuizBot extends TelegramLongPollingBot {
     private void handleQuestionWhileTestPassing(CallbackQuery query, User user, int questionIndex) {
         var questionId = userService.getQuestionId(user.getId(), questionIndex);
         var question = questionsService.getQuestionById(questionId);
-        if (question == null && userService.getQuestionId(user.getId(), questionIndex - 1) == null) {
-            handleTestEnding(user, questionId);
+        if (question == null && userService.getQuestionId(user.getId(), questionIndex - 1) != null) {
+            handleTestEnding(query, user, questionId);
             return;
         }
         var questionText = question.getText();
         var questionType = questionsService.getQuestionTypeById(question.getTypeId());
-        InlineKeyboardMarkup keyboard = InlineKeyboardMarkup.builder().build();
+        InlineKeyboardMarkup keyboard = InlineKeyboardMarkup.builder().clearKeyboard().build();
         if ("Choose".equals(questionType.getType())) {
             keyboard = questionsService.getChooseQuestionMenu(question).build();
         } else {
@@ -153,13 +153,32 @@ public class MtQuizBot extends TelegramLongPollingBot {
         }
         if (query != null)
             buttonTap(query, questionText, keyboard);
-        else sendInlineMenu(user.getLongId(), questionText, keyboard);
+        else {
+            sendText(user.getLongId(), questionText);
+        }
         userService.putCurrentQuestionNum(user.getId(), questionIndex);
     }
 
-    private void handleTestEnding(User user, String testId) {
+    private void handleTestEnding(CallbackQuery query, User user, String testId) {
         // TODO: implement
         var score = userService.getUserScore(user.getId(), testId);
+        var test = testsService.getById(testId);
+        var scoreString = "Your score is: " + score.toString() + "\n" +
+                          "Min score to pass test: " + test.getMin_score().toString() + "\n" +
+                          (score >= test.getMin_score() ? "You have passed :)" : "You did not pass :(");
+        var keyboard = InlineKeyboardMarkup
+                        .builder()
+                        .keyboardRow(List.of(
+                                            InlineKeyboardButton.builder()
+                                            .text("Back to test")
+                                            .callbackData("/test " + testId)
+                                            .build()
+                                        )
+                                    );
+        if (query == null)
+            sendInlineMenu(user.getLongId(), scoreString, keyboard.build());
+        else buttonTap(query, scoreString, keyboard.build());
+        userService.putBotState(user.getId(), BotState.idle);
     }
 
     @Override
