@@ -5,6 +5,7 @@ import java.util.List;
 import org.springframework.stereotype.Service;
 
 import com.bot.mtquizbot.models.BotState;
+import com.bot.mtquizbot.models.TestQuestion;
 import com.bot.mtquizbot.models.User;
 import com.bot.mtquizbot.repository.IRedisRepository;
 import com.bot.mtquizbot.repository.IUserRepository;
@@ -63,6 +64,36 @@ public class UserService extends BaseService {
     public void putBotState(String userId, BotState state) {
         log.trace("#### putBotState() [userId={}, state={}]", userId, state.name());
         cache.putBotState(userId, state);
+    }
+
+    public void putQuestionsId(String userId, List<TestQuestion> questions){
+        log.trace("#### putQuestionsId() [user_id={}, questions={}]", userId, questions);
+        cache.putQuestionsId(userId, questions);
+    }
+
+    public String getQuestionId(String userId, Integer index){
+        log.trace("#### getQuestionId() [user_id={}, index={}]", userId, index);
+        return cache.getQuestionId(userId, index);
+    }
+
+    public Integer getUserScore(String userId, String testId){
+        log.trace("#### getUserScore() [user_id={}, testId={}]", userId, testId);
+        return cache.getUserScore(userId, testId);
+    }
+
+    public void putUserScore(String userId, String testId, Integer score){
+        log.trace("#### putUserScore() [user_id={}, testId={}, score={}]", userId, testId, score);
+        cache.putUserScore(userId, testId, score);
+    }
+
+    public void putCurrentQuestionNum(String userId,Integer num){
+        log.trace("#### putCurrentQuestionNum() [user_id={}, num={}]", userId, num);
+        cache.putCurrentQuestionNum(userId, num);
+    }
+
+    public Integer getCurrentQuestionNum(String userId){
+        log.trace("#### getCurrentQuestionNum() [user_id={}]", userId);
+        return cache.getCurrentQuestionNum(userId);
     }
 
 }

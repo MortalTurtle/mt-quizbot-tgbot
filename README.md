@@ -32,6 +32,8 @@ supported Bot commands -
 
 /addfalseanswer [questionId] add false answer for question, *
 
-/starttest [testId] [numOfQuestion] - start taking the test, *
+/starttest [numOfQuestion] - start taking the test, *
+
+/continuetest [ansOnprevQuestion] - continue test, *
 
 (* - called only from inline menu)

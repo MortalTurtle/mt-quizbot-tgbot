@@ -135,6 +135,52 @@ public class MtQuizBot extends TelegramLongPollingBot {
         }
     }
 
+    private void handleQuestionWhileTestPassing(CallbackQuery query, User user, int questionIndex) {
+        var questionId = userService.getQuestionId(user.getId(), questionIndex);
+        var question = questionsService.getQuestionById(questionId);
+        if (question == null && userService.getQuestionId(user.getId(), questionIndex - 1) != null) {
+            handleTestEnding(query, user, questionId);
+            return;
+        }
+        var questionText = question.getText();
+        var questionType = questionsService.getQuestionTypeById(question.getTypeId());
+        InlineKeyboardMarkup keyboard = InlineKeyboardMarkup.builder().clearKeyboard().build();
+        if ("Choose".equals(questionType.getType())) {
+            keyboard = questionsService.getChooseQuestionMenu(question).build();
+        } else {
+            userService.putBotState(user.getId(), BotState.waitingForQuestionsAnswer);
+            questionText += "\nPlease enter your answer.";
+        }
+        if (query != null)
+            buttonTap(query, questionText, keyboard);
+        else {
+            sendText(user.getLongId(), questionText);
+        }
+        userService.putCurrentQuestionNum(user.getId(), questionIndex);
+    }
+
+    private void handleTestEnding(CallbackQuery query, User user, String testId) {
+        // TODO: implement
+        var score = userService.getUserScore(user.getId(), testId);
+        var test = testsService.getById(testId);
+        var scoreString = "Your score is: " + score.toString() + "\n" +
+                          "Min score to pass test: " + test.getMin_score().toString() + "\n" +
+                          (score >= test.getMin_score() ? "You have passed :)" : "You did not pass :(");
+        var keyboard = InlineKeyboardMarkup
+                        .builder()
+                        .keyboardRow(List.of(
+                                            InlineKeyboardButton.builder()
+                                            .text("Back to test")
+                                            .callbackData("/test " + testId)
+                                            .build()
+                                        )
+                                    );
+        if (query == null)
+            sendInlineMenu(user.getLongId(), scoreString, keyboard.build());
+        else buttonTap(query, scoreString, keyboard.build());
+        userService.putBotState(user.getId(), BotState.idle);
+    }
+
     @Override
     public void onUpdateReceived(Update update) {
         Message msg;
@@ -395,6 +441,29 @@ public class MtQuizBot extends TelegramLongPollingBot {
         );
     }
 
+
+    @StateAction(BotState.waitingForQuestionsAnswer)
+    private void botWaitingForQuestionsAnswer(Update update) {
+        // TODO: implement 
+        var msg = update.getMessage();
+        var user = userService.getById(msg.getFrom().getId());
+        var questionIndex = userService.getCurrentQuestionNum(user.getId());
+        var questionId = userService.getQuestionId(user.getId(),questionIndex);
+        var question = questionsService.getQuestionById(questionId);
+        if (!msg.hasText()){
+            sendText(user.getLongId(), "No text in message, please write your answer");
+            return;
+        }
+        if (question.getAnswer().toLowerCase().equals(msg.getText().toLowerCase())){
+            userService.putUserScore(user.getId(),
+                                    question.getTestId(),
+                                    userService.getUserScore(user.getId(),
+                                                            question.getTestId())
+                                    + question.getWeight());
+        }
+        handleQuestionWhileTestPassing(null, user, questionIndex + 1);
+    }
+
     @CommandAction("/creategroup")
     private void CreateGroupCommand(Update update) {
         var id = update.getMessage().getFrom().getId();
@@ -548,12 +617,61 @@ public class MtQuizBot extends TelegramLongPollingBot {
             menu.build());
     }
 
+    // args: [testId]
     @CommandAction("/starttest")
     private void StartPassingTestMenuCommand(Update update) {
-        if (!update.hasCallbackQuery())
+        if (!update.hasCallbackQuery()) {
             return;
+        }
+        var query = update.getCallbackQuery();
+        var args = query.getData().split(" ");
+        var testId = args[1];
+        var test = testsService.getById(testId);
+        var user = userService.getById(query.getFrom().getId());
+        if (test == null) {
+            sendText(user.getLongId(), "Sorry, no such test.");
+            return;
+        }
+        var questions = questionsService.getQuestionsByTestId(test.getId(), 0, Integer.MAX_VALUE);
+        if (questions == null) {
+            sendText(user.getLongId(), "There are no questions in the test.");
+            return;
+        }
+        var group = groupService.getById(test.getGroup_id());
+        if (!group.getId().equals(user.getGroup_id())) {
+            sendText(user.getLongId(), "You are not part of this group.");
+            return;
+        }
+        userService.putQuestionsId(user.getId(), questions);
+        userService.putUserScore(user.getId(), testId, 0);
+        handleQuestionWhileTestPassing(query, user, 0);
     }
 
+    // args [answerOnPrevQuestion]
+    @CommandAction("/continuetest")
+    private void continueTest(Update update){
+        var query = update.getCallbackQuery();
+        if (!update.hasCallbackQuery()) {
+            return;
+        }
+        
+        var args = query.getData().split(" ");
+        var user = userService.getById(query.getFrom().getId());
+        var questionIndex = userService.getCurrentQuestionNum(user.getId());
+        var answerOnPrevQuestion = args[1];
+        var questionId = userService.getQuestionId(user.getId(), questionIndex);
+        var question = questionsService.getQuestionById(questionId);
+        var correctAnswer = question.getAnswer();
+        if(answerOnPrevQuestion.toLowerCase().equals(correctAnswer.toLowerCase())){
+            userService.putUserScore(user.getId(),
+                                    question.getTestId(),
+                                    userService.getUserScore(user.getId(),
+                                                            question.getTestId())
+                                    + question.getWeight());
+        }
+        handleQuestionWhileTestPassing(query, user, questionIndex + 1);
+    }
+    
     @CommandAction("/edittest")
     private void EditTestMenuCommand(Update update) {
         if (!update.hasCallbackQuery())
@@ -575,7 +693,7 @@ public class MtQuizBot extends TelegramLongPollingBot {
         var role = roleService.getUserRole(user, group);
         if (role == GroupRole.Participant ||
             role == GroupRole.Contributor &&
-            test.getOwner_id() != user.getId()) {
+            !test.getOwner_id().equals(user.getId())) {
             sendText(user.getLongId(), "You have no rights to edit this test, sry I guess :(");
             return;
         }
@@ -604,7 +722,7 @@ public class MtQuizBot extends TelegramLongPollingBot {
         var role = roleService.getUserRole(user, group);
         if (role == GroupRole.Participant ||
             role == GroupRole.Contributor &&
-            test.getOwner_id() != user.getId()) {
+            !test.getOwner_id().equals(user.getId())) {
             sendText(user.getLongId(), "You have no rights to edit this test, sry I guess :(");
             return;
         }

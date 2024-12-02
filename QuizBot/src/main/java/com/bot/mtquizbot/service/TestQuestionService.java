@@ -1,6 +1,7 @@
 package com.bot.mtquizbot.service;
 
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.List;
 
 import org.springframework.stereotype.Service;
@@ -135,6 +136,11 @@ public class TestQuestionService extends BaseService {
         return strB.toString();
     }
 
+    public List<String>  getFalseAnswersStringList (TestQuestion question){
+        var listFalseAnswer = testQuestionRepository.getFalseAnswers(question);
+        return listFalseAnswer;
+    }
+
     public String getQuestionDescriptionMessage(TestQuestion question) {
         return question.getText() + 
             "\nAnswer: " + (question.getAnswer() == null ? "No answer, please add one" : question.getAnswer()) + 
@@ -168,5 +174,20 @@ public class TestQuestionService extends BaseService {
             throw new RuntimeException(ex);
         }
         testQuestionRepository.updateTestQuestion(q);
+    }
+
+    public InlineKeyboardMarkupBuilder getChooseQuestionMenu(TestQuestion question) {
+        var answers = getFalseAnswersStringList(question);
+        answers.add(question.getAnswer()); 
+        Collections.shuffle(answers); 
+        List<List<InlineKeyboardButton>> rows = new ArrayList<>();
+        for (String answer : answers) {
+            var button = InlineKeyboardButton.builder()
+                    .text(answer)
+                    .callbackData("/continuetest " + answer) 
+                    .build();
+            rows.add(Collections.singletonList(button));
+        }
+        return InlineKeyboardMarkup.builder().keyboard(rows);
     }
 }
