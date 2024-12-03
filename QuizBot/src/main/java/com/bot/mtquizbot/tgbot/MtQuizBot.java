@@ -138,24 +138,28 @@ public class MtQuizBot extends TelegramLongPollingBot {
     private void handleQuestionWhileTestPassing(CallbackQuery query, User user, int questionIndex) {
         var questionId = userService.getQuestionId(user.getId(), questionIndex);
         var question = questionsService.getQuestionById(questionId);
-        if (question == null && userService.getQuestionId(user.getId(), questionIndex - 1) != null) {
-            handleTestEnding(query, user, questionId);
+        if (question == null) {
+            var prev = userService.getQuestionId(user.getId(), questionIndex - 1);
+            if (prev != null)
+                handleTestEnding(query, user, questionsService.getQuestionById(prev).getTestId());
             return;
         }
         var questionText = question.getText();
         var questionType = questionsService.getQuestionTypeById(question.getTypeId());
-        InlineKeyboardMarkup keyboard = InlineKeyboardMarkup.builder().clearKeyboard().build();
+        InlineKeyboardMarkup keyboard = null;
         if ("Choose".equals(questionType.getType())) {
             keyboard = questionsService.getChooseQuestionMenu(question).build();
         } else {
             userService.putBotState(user.getId(), BotState.waitingForQuestionsAnswer);
+            if (query != null) {
+                deleteMsg(user.getLongId(), query.getMessage().getMessageId());
+                query = null;
+            }
             questionText += "\nPlease enter your answer.";
         }
-        if (query != null)
-            buttonTap(query, questionText, keyboard);
-        else {
-            sendText(user.getLongId(), questionText);
-        }
+        if (query != null) buttonTap(query, questionText, keyboard);
+        else if (keyboard != null) sendInlineMenu(user.getLongId(), questionText, keyboard);
+        else sendText(user.getLongId(), questionText);
         userService.putCurrentQuestionNum(user.getId(), questionIndex);
     }
 
