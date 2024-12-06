@@ -164,7 +164,6 @@ public class MtQuizBot extends TelegramLongPollingBot {
     }
 
     private void handleTestEnding(CallbackQuery query, User user, String testId) {
-        // TODO: implement
         var score = userService.getUserScore(user.getId(), testId);
         var test = testsService.getById(testId);
         var scoreString = "Your score is: " + score.toString() + "\n" +
@@ -448,7 +447,6 @@ public class MtQuizBot extends TelegramLongPollingBot {
 
     @StateAction(BotState.waitingForQuestionsAnswer)
     private void botWaitingForQuestionsAnswer(Update update) {
-        // TODO: implement 
         var msg = update.getMessage();
         var user = userService.getById(msg.getFrom().getId());
         var questionIndex = userService.getCurrentQuestionNum(user.getId());
