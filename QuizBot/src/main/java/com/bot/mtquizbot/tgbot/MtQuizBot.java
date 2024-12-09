@@ -68,6 +68,9 @@ public class MtQuizBot extends TelegramLongPollingBot {
         telegramBotsApi.registerBot(this);
     }
 
+
+// TODO : fix test pasing if question has to answer
+
     private void sendText(Long who, String what) {
         SendMessage sm = SendMessage.builder()
                 .chatId(who.toString())
@@ -164,7 +167,6 @@ public class MtQuizBot extends TelegramLongPollingBot {
     }
 
     private void handleTestEnding(CallbackQuery query, User user, String testId) {
-        // TODO: implement
         var score = userService.getUserScore(user.getId(), testId);
         var test = testsService.getById(testId);
         var scoreString = "Your score is: " + score.toString() + "\n" +
@@ -246,11 +248,11 @@ public class MtQuizBot extends TelegramLongPollingBot {
     }
 
     @StateAction(BotState.idle)
-    private void BotIdle(Update update) {
+    private void botIdle(Update update) {
     }
 
     @StateAction(BotState.waitingForGroupCode)
-    private void BotWaitingForGroupCode(Update update) {
+    private void botWaitingForGroupCode(Update update) {
         var msg = update.getMessage();
         var id = update.getMessage().getFrom().getId();
         TestGroup group;
@@ -270,7 +272,7 @@ public class MtQuizBot extends TelegramLongPollingBot {
     }
 
     @StateAction(BotState.waitingForGroupName)
-    private void BotWaingForGroupName(Update update) {
+    private void botWaingForGroupName(Update update) {
         var msg = update.getMessage();
         var id = update.getMessage().getFrom().getId();
         if (!msg.hasText()) {
@@ -283,7 +285,7 @@ public class MtQuizBot extends TelegramLongPollingBot {
     }
 
     @StateAction(BotState.waitingForGroupDescription)
-    private void BotWaitingForGroupDescription(Update update) {
+    private void botWaitingForGroupDescription(Update update) {
         var msg = update.getMessage();
         var id = update.getMessage().getFrom().getId();
         if (!msg.hasText()) {
@@ -300,7 +302,7 @@ public class MtQuizBot extends TelegramLongPollingBot {
     }
 
     @StateAction(BotState.waitingForTestName)
-    private void BotWaitingForTestName(Update update) {
+    private void botWaitingForTestName(Update update) {
         var msg = update.getMessage();
         var id = msg.getFrom().getId();
         if (!msg.hasText()) {
@@ -313,7 +315,7 @@ public class MtQuizBot extends TelegramLongPollingBot {
     }
 
     @StateAction(BotState.waitingForTestDescription)
-    private void BotWaitingForTestDescription(Update update) {
+    private void botWaitingForTestDescription(Update update) {
         var msg = update.getMessage();
         var id = msg.getFrom().getId();
         if (!msg.hasText()) {
@@ -448,7 +450,6 @@ public class MtQuizBot extends TelegramLongPollingBot {
 
     @StateAction(BotState.waitingForQuestionsAnswer)
     private void botWaitingForQuestionsAnswer(Update update) {
-        // TODO: implement 
         var msg = update.getMessage();
         var user = userService.getById(msg.getFrom().getId());
         var questionIndex = userService.getCurrentQuestionNum(user.getId());
@@ -469,14 +470,14 @@ public class MtQuizBot extends TelegramLongPollingBot {
     }
 
     @CommandAction("/creategroup")
-    private void CreateGroupCommand(Update update) {
+    private void createGroupCommand(Update update) {
         var id = update.getMessage().getFrom().getId();
         userService.putBotState(Long.toString(id), BotState.waitingForGroupName);
         sendText(id, "Please enter a group name");
     }
 
     @CommandAction("/join")
-    private void JoinCommand(Update update) {
+    private void joinCommand(Update update) {
         var id = update.getMessage().getFrom().getId();
         userService.putBotState(Long.toString(id), BotState.waitingForGroupCode);
         var group = groupService.getUserGroup(userService.getById(id));
@@ -486,7 +487,7 @@ public class MtQuizBot extends TelegramLongPollingBot {
     }
     
     @CommandAction("/start")
-    private void StartCommand(Update update) {
+    private void startCommand(Update update) {
         var id = update.getMessage().getFrom().getId();
         var user = userService.getById(id);
         var group = groupService.getUserGroup(user);
@@ -510,7 +511,7 @@ public class MtQuizBot extends TelegramLongPollingBot {
     }
     
     @CommandAction("/groupinfo")
-    private void GroupInfoCommand(Update update) {
+    private void groupInfoCommand(Update update) {
         var id = update.getMessage().getFrom().getId();
         var user = userService.getById(id);
         var group = groupService.getUserGroup(user);
@@ -544,7 +545,7 @@ public class MtQuizBot extends TelegramLongPollingBot {
     }
 
     @CommandAction("/tests")
-    private void GetTestsCommand(Update update) {
+    private void getTestsCommand(Update update) {
         var id = update.getMessage().getFrom().getId();
         var user = userService.getById(id);
         var group = groupService.getUserGroup(user);
@@ -562,7 +563,7 @@ public class MtQuizBot extends TelegramLongPollingBot {
     }
 
     @CommandAction("/createtest")
-    private void CreateTestCommand(Update update) {
+    private void createTestCommand(Update update) {
         var id = update.getMessage().getFrom().getId();
         var user = userService.getById(id);
         var group = groupService.getUserGroup(user);
@@ -581,7 +582,7 @@ public class MtQuizBot extends TelegramLongPollingBot {
     }
 
     @CommandAction("/test")
-    private void TestMenuCommand(Update update) {
+    private void testMenuCommand(Update update) {
         if (!update.hasCallbackQuery())
             return;
         var query = update.getCallbackQuery();
@@ -623,7 +624,7 @@ public class MtQuizBot extends TelegramLongPollingBot {
 
     // args: [testId]
     @CommandAction("/starttest")
-    private void StartPassingTestMenuCommand(Update update) {
+    private void startPassingTestMenuCommand(Update update) {
         if (!update.hasCallbackQuery()) {
             return;
         }
@@ -677,7 +678,7 @@ public class MtQuizBot extends TelegramLongPollingBot {
     }
     
     @CommandAction("/edittest")
-    private void EditTestMenuCommand(Update update) {
+    private void editTestMenuCommand(Update update) {
         if (!update.hasCallbackQuery())
             return;
         var query = update.getCallbackQuery();
