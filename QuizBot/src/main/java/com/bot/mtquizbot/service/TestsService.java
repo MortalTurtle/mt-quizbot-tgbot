@@ -2,6 +2,7 @@ package com.bot.mtquizbot.service;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Map;
 
 import org.glassfish.grizzly.utils.Pair;
 import org.springframework.stereotype.Service;
@@ -10,6 +11,7 @@ import org.telegram.telegrambots.meta.api.objects.replykeyboard.buttons.InlineKe
 
 import com.bot.mtquizbot.models.Test;
 import com.bot.mtquizbot.models.TestGroup;
+import com.bot.mtquizbot.models.TestResult;
 import com.bot.mtquizbot.models.User;
 import com.bot.mtquizbot.repository.ITestsRepository;
 
@@ -43,6 +45,16 @@ public class TestsService extends BaseService {
                 (test.getMin_score() == null ? "" : "Min score to complete - " + Integer.toString(test.getMin_score()));
     }
 
+    public List<TestResult> getTestResultList(User user, Integer limit, Integer offset) {
+        log.trace("#### getTestResultList() [user={}, limit={}, offset={}]", user, limit, offset);
+        return repo.getTestResultList(user, limit, offset);
+    }
+
+    public void putTestResult(User user, String testId, Integer score) {
+        log.trace("#### putTestResult() [user={}, testId={}, score={}]", user, testId, score);
+        repo.putTestResult(user, testId, score);
+    }
+
     public InlineKeyboardMarkup getEditMenu(Test test) {
         var editQuestionsButton = InlineKeyboardButton.builder()
                 .callbackData("/editquestions " + test.getId())
@@ -54,6 +66,14 @@ public class TestsService extends BaseService {
         return menu.build();
     }
 
+    public void updateTestProperty(Test test, String propertyName, String strVal) throws NoSuchFieldException,
+            IllegalArgumentException,
+            NumberFormatException {
+        setNewFieldValueFromString(test, propertyName, strVal);
+        repo.updateTest(test);
+    }
+
+    // TODO: make shorter
     public Pair<InlineKeyboardMarkup, String> getGroupTestsMenuWithDescription(TestGroup group,
             Integer maxTestButtonsInTestsMenuRow) {
         var tests = getTestList(group);
@@ -90,10 +110,14 @@ public class TestsService extends BaseService {
         return new Pair(menu.build(), strB.toString());
     }
 
-    public void updateTestProperty(Test test, String propertyName, String strVal) throws NoSuchFieldException,
-            IllegalArgumentException,
-            NumberFormatException {
-        setNewFieldValueFromString(test, propertyName, strVal);
-        repo.updateTest(test);
+    public String getMessageTextFromTestResults(Map<TestResult, Test> results) {
+        String msgString = "";
+        for (var result : results.keySet()) {
+            var test = results.get(result);
+            msgString += result.getScore().toString() + "/" +
+                    test.getMin_score().toString() + " " +
+                    "test name: " + test.getName() + "\n";
+        }
+        return msgString;
     }
 }

@@ -76,5 +76,8 @@ CREATE TABLE IF NOT EXISTS quizdb.question_false_answers(
 CREATE TABLE IF NOT EXISTS quizdb.test_results(
     user_id TEXT REFERENCES quizdb.users(id),
     test_id TEXT REFERENCES quizdb.tests(id),
-    score INTEGER NOT NULL
+    score INTEGER NOT NULL,
+    finished_ts TIMESTAMP DEFAULT NOW()
 );
+
+CREATE INDEX IF NOT EXISTS idx_by_finished_ts_results ON quizdb.test_results(finished_ts);
