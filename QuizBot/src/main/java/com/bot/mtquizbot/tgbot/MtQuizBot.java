@@ -966,7 +966,7 @@ public class MtQuizBot extends TelegramLongPollingBot {
         if (hasMore)
             buttons.add(InlineKeyboardButton.builder()
                     .text("Next page ⏩")
-                    .callbackData("/results" + Integer.toString(page + 1))
+                    .callbackData("/results " + Integer.toString(page + 1))
                     .build());
         keyboard.keyboardRow(buttons);
         keyboard.keyboardRow(List.of(InlineKeyboardButton.builder()
