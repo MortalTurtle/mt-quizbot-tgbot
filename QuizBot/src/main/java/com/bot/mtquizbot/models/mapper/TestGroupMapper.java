@@ -13,8 +13,7 @@ public class TestGroupMapper implements RowMapper<TestGroup> {
         var entity = new TestGroup(
                 rs.getString("id"),
                 rs.getString("name"),
-                rs.getString("description")
-        );
+                rs.getString("description"));
         return entity;
     }
 }

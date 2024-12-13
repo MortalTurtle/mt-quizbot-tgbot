@@ -30,21 +30,23 @@ public class UserRepository implements IUserRepository {
     public UserRepository(@Qualifier("bot-db") JdbcTemplate template) {
         this.template = template;
     }
+
     @Override
     public User getById(String id) {
         return DataAccessUtils.singleResult(
                 template.query(SQL_SELECT_BY_NAME, USER_MAPPER, id));
     }
+
     @Override
     public List<User> getUserList() {
         return template.query(SQL_SELECT_LIST, USER_MAPPER);
     }
+
     @Override
     public void insert(User entity) {
         var result = template.update(SQL_INSERT,
-            entity.getId(),
-            entity.getUsername()
-        );
+                entity.getId(),
+                entity.getUsername());
     }
 
     @Override

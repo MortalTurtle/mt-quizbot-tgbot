@@ -1,4 +1,5 @@
 package com.bot.mtquizbot.service;
+
 import java.util.HashMap;
 import java.util.List;
 import java.util.function.Function;
@@ -26,16 +27,16 @@ public class BaseService {
                 field.setAccessible(true);
                 var annotation = field.getAnnotation(CanEditObjectField.class);
                 menu.keyboardRow(List.of(InlineKeyboardButton.builder()
-                .text(annotation.getPropertyButtonText())
-                .callbackData(command + " " + obj.getId() + " " + field.getName())
-                .build()
-                ));
+                        .text(annotation.getPropertyButtonText())
+                        .callbackData(command + " " + obj.getId() + " " + field.getName())
+                        .build()));
             }
         }
         return menu;
     }
 
-    protected void setNewFieldValueFromString(IModel model, String fieldName, String value) throws NoSuchFieldException, NumberFormatException  {
+    protected void setNewFieldValueFromString(IModel model, String fieldName, String value)
+            throws NoSuchFieldException, NumberFormatException {
         var field = model.getClass().getDeclaredField(fieldName);
         field.setAccessible(true);
         var fieldType = field.getType();

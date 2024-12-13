@@ -1,4 +1,5 @@
 package com.bot.mtquizbot.models.mapper;
+
 import java.sql.ResultSet;
 import java.sql.SQLException;
 
@@ -12,8 +13,7 @@ public class UserMapper implements RowMapper<User> {
         var entity = new User(
                 rs.getString("id"),
                 rs.getString("username"),
-                rs.getString("group_id")
-        );
+                rs.getString("group_id"));
         return entity;
     }
 }

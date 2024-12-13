@@ -20,7 +20,7 @@ public class GroupService extends BaseService {
         log.trace("#### getById() [id={}]", id);
         return repo.getById(id);
     }
-    
+
     public TestGroup create(String name, String description) {
         log.trace("#### create() [name={}, description={}]", name, description);
         return repo.create(name, description);

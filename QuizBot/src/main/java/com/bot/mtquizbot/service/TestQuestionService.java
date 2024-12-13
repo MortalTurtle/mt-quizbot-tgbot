@@ -1,6 +1,7 @@
 package com.bot.mtquizbot.service;
 
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.List;
 
 import org.springframework.stereotype.Service;
@@ -32,7 +33,7 @@ public class TestQuestionService extends BaseService {
         return testQuestionRepository.getQuestionById(questionId);
     }
 
-    public TestQuestion addQuestion(String testId ,String typeId, Integer weight, String text) {
+    public TestQuestion addQuestion(String testId, String typeId, Integer weight, String text) {
         log.trace("#### addQuestion() [testId={} typeId={}, weight={}, text={}]", testId, typeId, weight, text);
         return testQuestionRepository.addQuestion(testId, typeId, weight, text);
     }
@@ -45,13 +46,13 @@ public class TestQuestionService extends BaseService {
     public InlineKeyboardMarkupBuilder getQuestionsMenuBuilder(List<TestQuestion> questions, int buttonsInSingleRow) {
         var menu = InlineKeyboardMarkup.builder();
         List<InlineKeyboardButton> row = new ArrayList<>();
-        int cnt = 0; 
+        int cnt = 0;
         for (var question : questions) {
             cnt++;
             row.add(InlineKeyboardButton.builder()
-                .text(Integer.toString(cnt) + " ✅")
-                .callbackData("/editquestion " + question.getId())
-                .build());
+                    .text(Integer.toString(cnt) + " ✅")
+                    .callbackData("/editquestion " + question.getId())
+                    .build());
             if (row.size() == buttonsInSingleRow) {
                 menu.keyboardRow(row);
                 row = new ArrayList<>();
@@ -67,9 +68,9 @@ public class TestQuestionService extends BaseService {
         List<InlineKeyboardButton> list = new ArrayList<>();
         for (var type : types) {
             list.add(InlineKeyboardButton.builder()
-            .text(type.getType())
-            .callbackData("/addquestionstagetype " + type.getId())
-            .build()); 
+                    .text(type.getType())
+                    .callbackData("/addquestionstagetype " + type.getId())
+                    .build());
             if (list.size() == typeButtonsInARow) {
                 menu.keyboardRow(list);
                 list = new ArrayList<>();
@@ -94,36 +95,30 @@ public class TestQuestionService extends BaseService {
         var menu = BaseService.getEditMenuBuilder(question, "/setqfield");
         if (this.getQuestionTypeById(question.getTypeId()).getType().equals("Choose"))
             menu.keyboardRow(
-                List.of(
-                    InlineKeyboardButton.builder()
-                    .text("Check false answers 🙈")
-                    .callbackData("/falseanswers " + question.getId()).build()
-                )
-            );
+                    List.of(
+                            InlineKeyboardButton.builder()
+                                    .text("Check false answers 🙈")
+                                    .callbackData("/falseanswers " + question.getId()).build()));
         menu.keyboardRow(
-            List.of(
-                InlineKeyboardButton.builder()
-                .text("Back to questions 📍")
-                .callbackData("/editquestions " + question.getTestId())
-                .build()
-            )
-        );
+                List.of(
+                        InlineKeyboardButton.builder()
+                                .text("Back to questions 📍")
+                                .callbackData("/editquestions " + question.getTestId())
+                                .build()));
         return menu;
     }
 
     public InlineKeyboardMarkupBuilder getFalseAnswersMenu(String questionId) {
         return InlineKeyboardMarkup.builder().keyboardRow(
-            List.of(
-                InlineKeyboardButton.builder()
-                .text("Add false answer ⭕️")
-                .callbackData("/addfalseanswer " + questionId)
-                .build(),
-                InlineKeyboardButton.builder()
-                .text("Back to question ❓")
-                .callbackData("/editquestion " + questionId)
-                .build()
-            )
-        );
+                List.of(
+                        InlineKeyboardButton.builder()
+                                .text("Add false answer ⭕️")
+                                .callbackData("/addfalseanswer " + questionId)
+                                .build(),
+                        InlineKeyboardButton.builder()
+                                .text("Back to question ❓")
+                                .callbackData("/editquestion " + questionId)
+                                .build()));
     }
 
     public String getFalseAnswersString(TestQuestion question) {
@@ -135,10 +130,15 @@ public class TestQuestionService extends BaseService {
         return strB.toString();
     }
 
+    public List<String> getFalseAnswersStringList(TestQuestion question) {
+        var listFalseAnswer = testQuestionRepository.getFalseAnswers(question);
+        return listFalseAnswer;
+    }
+
     public String getQuestionDescriptionMessage(TestQuestion question) {
-        return question.getText() + 
-            "\nAnswer: " + (question.getAnswer() == null ? "No answer, please add one" : question.getAnswer()) + 
-            "\nWeight: " + Integer.toString(question.getWeight());
+        return question.getText() +
+                "\nAnswer: " + (question.getAnswer() == null ? "No answer, please add one" : question.getAnswer()) +
+                "\nWeight: " + Integer.toString(question.getWeight());
     }
 
     public String getQuestionTypeDescriptionMessage(List<QuestionType> types) {
@@ -148,25 +148,41 @@ public class TestQuestionService extends BaseService {
         }
         return strB.toString();
     }
-    
+
     public String getQuestionDescriptionMessage(List<TestQuestion> questions) {
         var strB = new StringBuilder();
         int cnt = 0;
         for (var question : questions) {
             cnt++;
-            strB.append(Integer.toString(cnt) + "): " + question.getText() + 
-                "\nWeight - " + Integer.toString(question.getWeight()) +
-                "\n");
+            strB.append(Integer.toString(cnt) + "): " + question.getText() +
+                    "\nWeight - " + Integer.toString(question.getWeight()) +
+                    "\n");
         }
         return strB.toString();
     }
 
-    public void updateQuestionProperty(TestQuestion q, String propertyName, String strVal) throws NumberFormatException  {
+    public void updateQuestionProperty(TestQuestion q, String propertyName, String strVal)
+            throws NumberFormatException {
         try {
             setNewFieldValueFromString(q, propertyName, strVal);
         } catch (NoSuchFieldException ex) {
             throw new RuntimeException(ex);
         }
         testQuestionRepository.updateTestQuestion(q);
+    }
+
+    public InlineKeyboardMarkupBuilder getChooseQuestionMenu(TestQuestion question) {
+        var answers = getFalseAnswersStringList(question);
+        answers.add(question.getAnswer());
+        Collections.shuffle(answers);
+        List<List<InlineKeyboardButton>> rows = new ArrayList<>();
+        for (String answer : answers) {
+            var button = InlineKeyboardButton.builder()
+                    .text(answer)
+                    .callbackData("/continuetest " + answer)
+                    .build();
+            rows.add(Collections.singletonList(button));
+        }
+        return InlineKeyboardMarkup.builder().keyboard(rows);
     }
 }
