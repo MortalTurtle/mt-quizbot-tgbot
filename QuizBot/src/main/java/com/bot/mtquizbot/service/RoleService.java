@@ -55,6 +55,8 @@ public class RoleService extends BaseService {
     public GroupRole getUserRole(User user, TestGroup group) {
         log.trace("#### getUserRole() [user={}, group={}]", user, group);
         var role = repo.getUserRole(user, group);
+        if (role == null)
+            return null;
         if (nameToRole == null)
             ConfigureMaps();
         return nameToRole.get(role.getName());
