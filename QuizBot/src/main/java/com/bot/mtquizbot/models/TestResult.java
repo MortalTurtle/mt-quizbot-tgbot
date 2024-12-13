@@ -9,8 +9,8 @@ import lombok.RequiredArgsConstructor;
 
 @Data
 @RequiredArgsConstructor
-public class TestResult  {
-    
+public class TestResult {
+
     @JsonProperty("user_id")
     private final String userId;
 
@@ -18,7 +18,7 @@ public class TestResult  {
     private final String testId;
 
     @JsonProperty("score")
-    private final Integer scoreId;
+    private final Integer score;
 
     @JsonProperty("finished_ts")
     private final Timestamp finishedTs;

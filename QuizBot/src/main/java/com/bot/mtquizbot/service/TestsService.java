@@ -2,6 +2,7 @@ package com.bot.mtquizbot.service;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Map;
 
 import org.glassfish.grizzly.utils.Pair;
 import org.springframework.stereotype.Service;
@@ -65,6 +66,14 @@ public class TestsService extends BaseService {
         return menu.build();
     }
 
+    public void updateTestProperty(Test test, String propertyName, String strVal) throws NoSuchFieldException,
+            IllegalArgumentException,
+            NumberFormatException {
+        setNewFieldValueFromString(test, propertyName, strVal);
+        repo.updateTest(test);
+    }
+
+    // TODO: make shorter
     public Pair<InlineKeyboardMarkup, String> getGroupTestsMenuWithDescription(TestGroup group,
             Integer maxTestButtonsInTestsMenuRow) {
         var tests = getTestList(group);
@@ -101,10 +110,14 @@ public class TestsService extends BaseService {
         return new Pair(menu.build(), strB.toString());
     }
 
-    public void updateTestProperty(Test test, String propertyName, String strVal) throws NoSuchFieldException,
-            IllegalArgumentException,
-            NumberFormatException {
-        setNewFieldValueFromString(test, propertyName, strVal);
-        repo.updateTest(test);
+    public String getMessageTextFromTestResults(Map<TestResult, Test> results) {
+        String msgString = "";
+        for (var result : results.keySet()) {
+            var test = results.get(result);
+            msgString += result.getScore().toString() + "/" +
+                    test.getMin_score().toString() + " " +
+                    "test name: " + test.getName();
+        }
+        return msgString;
     }
 }

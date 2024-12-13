@@ -1,5 +1,6 @@
 package com.bot.mtquizbot.tgbot;
 
+import static java.lang.Integer.min;
 import java.lang.reflect.InvocationTargetException;
 import java.util.ArrayList;
 import java.util.HashMap;
@@ -25,7 +26,9 @@ import org.telegram.telegrambots.meta.exceptions.TelegramApiException;
 import com.bot.mtquizbot.exceptions.NegativeNumberException;
 import com.bot.mtquizbot.models.BotState;
 import com.bot.mtquizbot.models.GroupRole;
+import com.bot.mtquizbot.models.Test;
 import com.bot.mtquizbot.models.TestGroup;
+import com.bot.mtquizbot.models.TestResult;
 import com.bot.mtquizbot.models.User;
 import com.bot.mtquizbot.service.GroupService;
 import com.bot.mtquizbot.service.RoleService;
@@ -52,6 +55,7 @@ public class MtQuizBot extends TelegramLongPollingBot {
     private final static Integer MAX_BUTTONS_IN_QUESTIONS_MENU_ROW = 6;
     private final static Integer MAX_QUESTIONS_IN_MENU = 20;
     private final static Integer MAX_QUESTIONS_TYPES_IN_MENU_ROW = 3;
+    private final static Integer MAX_TEST_RESULTS_ON_PAGE = 10;
 
     public MtQuizBot(TelegramBotsApi telegramBotsApi,
             @Value("${telegram.bot.username}") String botUsername,
@@ -186,6 +190,7 @@ public class MtQuizBot extends TelegramLongPollingBot {
             sendInlineMenu(user.getLongId(), scoreString, keyboard.build());
         else
             buttonTap(query, scoreString, keyboard.build());
+        testsService.putTestResult(user, testId, score);
         userService.putBotState(user.getId(), BotState.idle);
     }
 
@@ -533,6 +538,10 @@ public class MtQuizBot extends TelegramLongPollingBot {
         menu.keyboardRow(List.of(testsButton));
         if (role == GroupRole.Owner || role == GroupRole.Contributor)
             menu.keyboardRow(List.of(createTestButton));
+        menu.keyboardRow(List.of(InlineKeyboardButton.builder()
+                .text("Results 🏆")
+                .callbackData("/results")
+                .build()));
         var groupMsg = "Your group: " +
                 group.getName() +
                 " - " +
@@ -923,6 +932,52 @@ public class MtQuizBot extends TelegramLongPollingBot {
         userService.putIntermediateVar(user.getId(), IntermediateVariable.QUESTION_TYPE, typeId);
         sendText(user.getLongId(), "Please enter a question text");
         userService.putBotState(user.getId(), BotState.waitingForQuestionText);
+    }
+
+    //TODO: make shorter
+    // /results [page=0]
+    @CommandAction("/results")
+    private void getTestResults(Update update) {
+        var message = update.getMessage();
+        var args = message.getText().split(" ");
+        var user = userService.getById(message.getFrom().getId());
+        int page = 0;
+        if (args.length > 1)
+            page = Integer.getInteger(args[1]);
+        var testResults = testsService.getTestResultList(user,
+                MAX_TEST_RESULTS_ON_PAGE + 1,
+                MAX_TEST_RESULTS_ON_PAGE * page);
+        if (testResults.isEmpty()) {
+            sendText(user.getLongId(), "No results found :)");
+            return;
+        }
+        var resultToTest = new HashMap<TestResult, Test>();
+        Boolean hasMore = testResults.size() > 10;
+        for (int i = 0; i < min(10, testResults.size()); i++)
+            resultToTest.put(testResults.get(i),
+                    testsService.getById(testResults.get(i).getTestId()));
+        var keyboard = InlineKeyboardMarkup.builder();
+        List<InlineKeyboardButton> buttons = new ArrayList();
+        if (page > 0)
+            buttons.add(InlineKeyboardButton.builder()
+                    .text("Previous page ⏪")
+                    .callbackData("/results" + Integer.toString(page - 1))
+                    .build());
+        if (hasMore)
+            buttons.add(InlineKeyboardButton.builder()
+                    .text("Next page ⏩")
+                    .callbackData("/results" + Integer.toString(page + 1))
+                    .build());
+        keyboard.keyboardRow(buttons);
+        keyboard.keyboardRow(List.of(InlineKeyboardButton.builder()
+                .text("back to group 🙈")
+                .callbackData("/groupinfo")
+                .build()));
+        var messageText = testsService.getMessageTextFromTestResults(resultToTest);
+        if (update.hasCallbackQuery())
+            buttonTap(update.getCallbackQuery(), messageText, keyboard.build());
+        else
+            sendInlineMenu(user.getLongId(), messageText, keyboard.build());
     }
 
     @Override
