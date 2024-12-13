@@ -276,6 +276,7 @@ public class MtQuizBot extends TelegramLongPollingBot {
                 roleService.addUserRole(group, user, GroupRole.Participant);
             }
             userService.updateGroupById(id, group.getId());
+            actionByCommand.get("/groupinfo").accept(update);
         }
     }
 
