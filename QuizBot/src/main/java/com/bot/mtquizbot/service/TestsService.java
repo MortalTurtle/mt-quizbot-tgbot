@@ -10,6 +10,7 @@ import org.telegram.telegrambots.meta.api.objects.replykeyboard.buttons.InlineKe
 
 import com.bot.mtquizbot.models.Test;
 import com.bot.mtquizbot.models.TestGroup;
+import com.bot.mtquizbot.models.TestResult;
 import com.bot.mtquizbot.models.User;
 import com.bot.mtquizbot.repository.ITestsRepository;
 
@@ -41,6 +42,16 @@ public class TestsService extends BaseService {
     public String getTestFullDescription(Test test) {
         return test.getName() + " - " + test.getDescription() + "\n" +
                 (test.getMin_score() == null ? "" : "Min score to complete - " + Integer.toString(test.getMin_score()));
+    }
+
+    public List<TestResult> getTestResultList(User user, Integer limit, Integer offset) {
+        log.trace("#### getTestResultList() [user={}, limit={}, offset={}]", user, limit, offset);
+        return repo.getTestResultList(user, limit, offset);
+    }
+
+    public void putTestResult(User user, String testId, Integer score) {
+        log.trace("#### putTestResult() [user={}, testId={}, score={}]", user, testId, score);
+        repo.putTestResult(user, testId, score);
     }
 
     public InlineKeyboardMarkup getEditMenu(Test test) {

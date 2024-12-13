@@ -19,20 +19,23 @@ public class TestsRepository implements ITestsRepository {
 
     private static final String SQL_SELECT_TEST_LIST = "" +
             "SELECT * FROM quizdb.tests WHERE group_id = ? ORDER BY created_ts";
-  
+
     private static final String SQL_INSERT_TEST = "" +
             "INSERT INTO quizdb.tests(group_id, owner_id, name, min_score, description) " +
             "VALUES (?, ?, ?, ?, ?) RETURNING *";
 
     private static final String SQL_SELECT_TEST_BY_ID = "" +
             "SELECT * FROM quizdb.tests WHERE id = ?";
-  
-  
+
     private static final String SQL_SELECT_TEST_LIST_RESULTS = "" +
-        "SELECT test_results.user_id, test_results.test_id, test_results.score, " +
-        "test_results.finished_ts FROM quizdb.test_results, quizdb.tests " +
-        "WHERE test_results.user_id = ? AND test_results.test_id = tests.id AND " +
-        "tests.group_id = ? ORDER BY test_results.finished_ts LIMIT ? OFFSET ?";
+            "SELECT test_results.user_id, test_results.test_id, test_results.score, " +
+            "test_results.finished_ts FROM quizdb.test_results, quizdb.tests " +
+            "WHERE test_results.user_id = ? AND test_results.test_id = tests.id AND " +
+            "tests.group_id = ? ORDER BY test_results.finished_ts LIMIT ? OFFSET ?";
+
+    private static final String SQL_INSERT_TEST_RESULT = "" +
+            "INSERT INTO quizdb.test_results(user_id, test_id, score)" +
+            "VALUES (?, ?, ?) RETURNING *";
 
     protected final static TestMapper TEST_MAPPER = new TestMapper();
     protected final static TestResultMapper TEST_RESULT_MAPPER = new TestResultMapper();
@@ -73,9 +76,13 @@ public class TestsRepository implements ITestsRepository {
     @Override
     public List<TestResult> getTestResultList(User user, Integer limit, Integer offset) {
         return template.query(SQL_SELECT_TEST_LIST_RESULTS, TEST_RESULT_MAPPER,
-                            user.getId(), user.getGroup_id(), limit, offset
-        );
+                user.getId(), user.getGroup_id(), limit, offset);
     }
 
+    @Override
+    public void putTestResult(User user, String testId, Integer score) {
+        template.query(SQL_INSERT_TEST_RESULT, TEST_RESULT_MAPPER,
+                user.getId(), testId, score);
+    }
 
 }
