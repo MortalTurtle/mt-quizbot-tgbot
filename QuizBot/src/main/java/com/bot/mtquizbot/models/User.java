@@ -19,7 +19,11 @@ public class User implements IModel {
     private final String group_id;
 
     @Override
-    public String toString() { return id; }
+    public String toString() {
+        return id;
+    }
 
-    public Long getLongId() { return Long.parseLong(id); } 
+    public Long getLongId() {
+        return Long.parseLong(id);
+    }
 }

@@ -20,10 +20,12 @@ import lombok.extern.slf4j.Slf4j;
 public class UserService extends BaseService {
     protected final IUserRepository repo;
     protected final IRedisRepository cache;
+
     public List<User> getUserList() {
         log.trace("#### getUserList() - working");
         return repo.getUserList();
     }
+
     public User getById(long id) {
         log.trace("#### getById() [id={}]", id);
         return repo.getById(Long.toString(id));
@@ -33,14 +35,17 @@ public class UserService extends BaseService {
         log.trace("#### getById() [id={}]", id);
         return repo.getById(id);
     }
+
     public void insert(User entity) {
         log.trace("#### insert() [entity={}]", entity);
         repo.insert(entity);
     }
+
     public void updateGroupById(long id, String groupId) {
         log.trace("#### updateGroup_id() [group_id={}, user_id={}]", id, groupId);
         repo.updateGroupById(Long.toString(id), groupId);
     }
+
     public void updateGroupById(String id, String groupId) {
         log.trace("#### updateGroup_id() [group_id={}, user_id={}]", id, groupId);
         repo.updateGroupById(id, groupId);
@@ -66,32 +71,32 @@ public class UserService extends BaseService {
         cache.putBotState(userId, state);
     }
 
-    public void putQuestionsId(String userId, List<TestQuestion> questions){
+    public void putQuestionsId(String userId, List<TestQuestion> questions) {
         log.trace("#### putQuestionsId() [user_id={}, questions={}]", userId, questions);
         cache.putQuestionsId(userId, questions);
     }
 
-    public String getQuestionId(String userId, Integer index){
+    public String getQuestionId(String userId, Integer index) {
         log.trace("#### getQuestionId() [user_id={}, index={}]", userId, index);
         return cache.getQuestionId(userId, index);
     }
 
-    public Integer getUserScore(String userId, String testId){
+    public Integer getUserScore(String userId, String testId) {
         log.trace("#### getUserScore() [user_id={}, testId={}]", userId, testId);
         return cache.getUserScore(userId, testId);
     }
 
-    public void putUserScore(String userId, String testId, Integer score){
+    public void putUserScore(String userId, String testId, Integer score) {
         log.trace("#### putUserScore() [user_id={}, testId={}, score={}]", userId, testId, score);
         cache.putUserScore(userId, testId, score);
     }
 
-    public void putCurrentQuestionNum(String userId,Integer num){
+    public void putCurrentQuestionNum(String userId, Integer num) {
         log.trace("#### putCurrentQuestionNum() [user_id={}, num={}]", userId, num);
         cache.putCurrentQuestionNum(userId, num);
     }
 
-    public Integer getCurrentQuestionNum(String userId){
+    public Integer getCurrentQuestionNum(String userId) {
         log.trace("#### getCurrentQuestionNum() [user_id={}]", userId);
         return cache.getCurrentQuestionNum(userId);
     }
