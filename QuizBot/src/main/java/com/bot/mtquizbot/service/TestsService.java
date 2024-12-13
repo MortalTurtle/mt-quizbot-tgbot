@@ -116,7 +116,7 @@ public class TestsService extends BaseService {
             var test = results.get(result);
             msgString += result.getScore().toString() + "/" +
                     test.getMin_score().toString() + " " +
-                    "test name: " + test.getName();
+                    "test name: " + test.getName() + "/n";
         }
         return msgString;
     }

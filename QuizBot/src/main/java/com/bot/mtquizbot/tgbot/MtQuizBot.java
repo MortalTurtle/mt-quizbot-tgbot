@@ -943,7 +943,7 @@ public class MtQuizBot extends TelegramLongPollingBot {
         var user = userService.getById(message.getFrom().getId());
         int page = 0;
         if (args.length > 1)
-            page = Integer.getInteger(args[1]);
+            page = Integer.parseInt(args[1]);
         var testResults = testsService.getTestResultList(user,
                 MAX_TEST_RESULTS_ON_PAGE + 1,
                 MAX_TEST_RESULTS_ON_PAGE * page);
