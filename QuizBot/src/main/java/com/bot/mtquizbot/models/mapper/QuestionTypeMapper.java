@@ -14,8 +14,7 @@ public class QuestionTypeMapper implements RowMapper<QuestionType> {
         var entity = new QuestionType(
                 rs.getString("id"),
                 rs.getString("type"),
-                rs.getString("description")
-        );
+                rs.getString("description"));
         return entity;
     }
 }

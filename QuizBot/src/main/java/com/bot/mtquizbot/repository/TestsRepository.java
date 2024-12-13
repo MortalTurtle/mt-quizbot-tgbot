@@ -15,15 +15,15 @@ import com.bot.mtquizbot.models.mapper.TestMapper;
 @Repository
 public class TestsRepository implements ITestsRepository {
 
-    private static final String SQL_SELECT_TEST_LIST = "" + 
-        "SELECT * FROM quizdb.tests WHERE group_id = ? ORDER BY created_ts";
-    
-    private static final String SQL_INSERT_TEST = "" + 
-        "INSERT INTO quizdb.tests(group_id, owner_id, name, min_score, description) " +
-        "VALUES (?, ?, ?, ?, ?) RETURNING *";
+    private static final String SQL_SELECT_TEST_LIST = "" +
+            "SELECT * FROM quizdb.tests WHERE group_id = ? ORDER BY created_ts";
 
-    private static final String SQL_SELECT_TEST_BY_ID = "" + 
-        "SELECT * FROM quizdb.tests WHERE id = ?";
+    private static final String SQL_INSERT_TEST = "" +
+            "INSERT INTO quizdb.tests(group_id, owner_id, name, min_score, description) " +
+            "VALUES (?, ?, ?, ?, ?) RETURNING *";
+
+    private static final String SQL_SELECT_TEST_BY_ID = "" +
+            "SELECT * FROM quizdb.tests WHERE id = ?";
 
     protected final static TestMapper TEST_MAPPER = new TestMapper();
     protected final JdbcTemplate template;
@@ -32,19 +32,17 @@ public class TestsRepository implements ITestsRepository {
         this.template = template;
     }
 
-
     @Override
     public Test create(User owner, TestGroup group, String name, Integer minScore, String description) {
         return DataAccessUtils.singleResult(
-            template.query(SQL_INSERT_TEST, TEST_MAPPER, group.getId(), owner.getId(), name, minScore, description)
-        );
+                template.query(SQL_INSERT_TEST, TEST_MAPPER, group.getId(), owner.getId(), name, minScore,
+                        description));
     }
 
     @Override
     public Test getById(String id) {
         return DataAccessUtils.singleResult(
-            template.query(SQL_SELECT_TEST_BY_ID, TEST_MAPPER, id)
-        );
+                template.query(SQL_SELECT_TEST_BY_ID, TEST_MAPPER, id));
     }
 
     @Override
@@ -55,12 +53,11 @@ public class TestsRepository implements ITestsRepository {
     @Override
     public void updateTest(Test test) {
         template.update("" +
-            "UPDATE quizdb.tests SET name = ?, min_score = ?, description = ? WHERE id = ?",
-            test.getName(),
-            test.getMin_score(),
-            test.getDescription(),
-            test.getId()
-        );
+                "UPDATE quizdb.tests SET name = ?, min_score = ?, description = ? WHERE id = ?",
+                test.getName(),
+                test.getMin_score(),
+                test.getDescription(),
+                test.getId());
     }
 
 }

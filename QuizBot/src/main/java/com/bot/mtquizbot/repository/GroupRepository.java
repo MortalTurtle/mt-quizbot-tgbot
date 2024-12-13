@@ -12,13 +12,13 @@ import com.bot.mtquizbot.models.mapper.TestGroupMapper;
 @Repository
 public class GroupRepository implements IGroupRepository {
 
-    private static final String SQL_SELECT_BY_ID = "" + 
-        "SELECT * FROM quizdb.groups WHERE id = ?";
+    private static final String SQL_SELECT_BY_ID = "" +
+            "SELECT * FROM quizdb.groups WHERE id = ?";
     private static final String SQL_INSERT = "" +
-        "INSERT INTO quizdb.groups (name, description) VALUES (?, ?) RETURNING *";
+            "INSERT INTO quizdb.groups (name, description) VALUES (?, ?) RETURNING *";
     private static final String SQL_SELECT_BY_USER = "" +
-        "SELECT groups.id, groups.name, groups.description FROM quizdb.users, quizdb.groups " + 
-        "WHERE groups.id = users.group_id AND users.id = ?";
+            "SELECT groups.id, groups.name, groups.description FROM quizdb.users, quizdb.groups " +
+            "WHERE groups.id = users.group_id AND users.id = ?";
 
     protected final static TestGroupMapper mapper = new TestGroupMapper();
     protected final JdbcTemplate template;
@@ -30,15 +30,13 @@ public class GroupRepository implements IGroupRepository {
     @Override
     public TestGroup getById(String id) {
         return DataAccessUtils.singleResult(
-            template.query(SQL_SELECT_BY_ID, mapper, id)
-        );
+                template.query(SQL_SELECT_BY_ID, mapper, id));
     }
 
     @Override
     public TestGroup create(String name, String description) {
         return DataAccessUtils.singleResult(
-            template.query(SQL_INSERT, mapper, name, description)
-        );
+                template.query(SQL_INSERT, mapper, name, description));
     }
 
     @Override
@@ -49,7 +47,6 @@ public class GroupRepository implements IGroupRepository {
     @Override
     public TestGroup getUserGroup(User user) {
         return DataAccessUtils.singleResult(
-            template.query(SQL_SELECT_BY_USER, mapper, user.getId())
-        );
+                template.query(SQL_SELECT_BY_USER, mapper, user.getId()));
     }
 }

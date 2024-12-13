@@ -13,8 +13,7 @@ public class RoleMapper implements RowMapper<RoleDb> {
     public RoleDb mapRow(ResultSet rs, int rowNum) throws SQLException {
         var entity = new RoleDb(
                 rs.getString("id"),
-                rs.getString("name")
-        );
+                rs.getString("name"));
         return entity;
     }
 }

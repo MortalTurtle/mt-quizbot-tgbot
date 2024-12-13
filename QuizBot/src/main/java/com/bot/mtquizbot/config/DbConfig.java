@@ -50,13 +50,13 @@ public class DbConfig extends DefaultDbConfig {
         long maxLifetime;
         Integer bulkSize;
 
-
         /**
-         * All-args constructor for {@link SpringDataJdbcProperties#toString()} (logging)
+         * All-args constructor for {@link SpringDataJdbcProperties#toString()}
+         * (logging)
          *
-         * @param url JDBC driver class name property
-         * @param driver JDBC driver class name property
-         * @param user JDBC username property
+         * @param url      JDBC driver class name property
+         * @param driver   JDBC driver class name property
+         * @param user     JDBC username property
          * @param password JDBC password property
          * @param poolSize Hikari / Vertica maxPoolSize property
          * @param bulkSize bulk insert size
@@ -70,6 +70,7 @@ public class DbConfig extends DefaultDbConfig {
             this.poolSize = poolSize;
             this.bulkSize = bulkSize;
         }
+
         public boolean isH2Database() {
             return driver.equals(H2_DATABASE_DRIVER);
         }

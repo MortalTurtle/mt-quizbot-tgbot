@@ -1,8 +1,8 @@
 package com.bot.mtquizbot.config;
 
-import com.zaxxer.hikari.HikariDataSource;
-
 import javax.sql.DataSource;
+
+import com.zaxxer.hikari.HikariDataSource;
 
 class DefaultDbConfig {
     protected DataSource hikariDataSource(String tag, DbConfig.SpringDataJdbcProperties properties) {

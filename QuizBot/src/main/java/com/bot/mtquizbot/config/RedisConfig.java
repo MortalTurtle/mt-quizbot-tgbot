@@ -27,7 +27,7 @@ public class RedisConfig {
         redisConfig.setPort(redisPort);
         return new JedisConnectionFactory(redisConfig);
     }
-    
+
     @Bean
     public RedisTemplate<String, Object> redisTemplate() {
         RedisTemplate<String, Object> redisTemplate = new RedisTemplate<>();

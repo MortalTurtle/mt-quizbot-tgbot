@@ -8,7 +8,10 @@ import com.bot.mtquizbot.models.User;
 
 public interface IRoleRepository {
     RoleDb getById(String id);
+
     List<RoleDb> getRoleList();
+
     RoleDb getUserRole(User user, TestGroup group);
+
     void addUserRole(TestGroup group, User user, RoleDb role);
 }

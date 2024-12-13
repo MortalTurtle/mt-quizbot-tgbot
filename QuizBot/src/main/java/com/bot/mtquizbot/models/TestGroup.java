@@ -10,13 +10,15 @@ import lombok.RequiredArgsConstructor;
 public class TestGroup implements IModel {
     @JsonProperty("id")
     private final String id;
-    
+
     @JsonProperty("name")
     private final String name;
-    
+
     @JsonProperty("description")
     private final String description;
 
     @Override
-    public String toString() { return id + name + " " + description; }
+    public String toString() {
+        return id + name + " " + description;
+    }
 }

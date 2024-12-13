@@ -1,6 +1,5 @@
 package com.bot.mtquizbot.service;
 
-
 import java.util.ArrayList;
 import java.util.List;
 
@@ -25,7 +24,7 @@ public class TestsService extends BaseService {
 
     public Test create(User owner, TestGroup group, String name, Integer minScore, String description) {
         log.trace("#### create() [owner={}, group={}, name={}, minScore={}, description={}]",
-            owner,group,name,minScore,description);
+                owner, group, name, minScore, description);
         return repo.create(owner, group, name, minScore, description);
     }
 
@@ -41,13 +40,13 @@ public class TestsService extends BaseService {
 
     public String getTestFullDescription(Test test) {
         return test.getName() + " - " + test.getDescription() + "\n" +
-        (test.getMin_score() == null ? "" : "Min score to complete - " + Integer.toString(test.getMin_score()));
+                (test.getMin_score() == null ? "" : "Min score to complete - " + Integer.toString(test.getMin_score()));
     }
 
     public InlineKeyboardMarkup getEditMenu(Test test) {
         var editQuestionsButton = InlineKeyboardButton.builder()
-            .callbackData("/editquestions " + test.getId())
-            .text("Questions 📌").build();
+                .callbackData("/editquestions " + test.getId())
+                .text("Questions 📌").build();
         var menu = BaseService.getEditMenuBuilder(test, "/ststfield");
         menu.keyboardRow(List.of(editQuestionsButton));
         var backButton = InlineKeyboardButton.builder().callbackData("/test " + test.getId()).text("Back 🚫").build();
@@ -55,7 +54,8 @@ public class TestsService extends BaseService {
         return menu.build();
     }
 
-    public Pair<InlineKeyboardMarkup, String> getGroupTestsMenuWithDescription(TestGroup group, Integer maxTestButtonsInTestsMenuRow) {
+    public Pair<InlineKeyboardMarkup, String> getGroupTestsMenuWithDescription(TestGroup group,
+            Integer maxTestButtonsInTestsMenuRow) {
         var tests = getTestList(group);
         StringBuilder strB = new StringBuilder();
         List<InlineKeyboardButton> testButtons = new ArrayList();
@@ -65,16 +65,15 @@ public class TestsService extends BaseService {
         strB.append("your groups tests:\n");
         for (var test : tests) {
             cnt++;
-            strB.append(Integer.toString(cnt) + "): " + 
-            test.getName() + " - " + 
-            test.getDescription() + "\n");
+            strB.append(Integer.toString(cnt) + "): " +
+                    test.getName() + " - " +
+                    test.getDescription() + "\n");
             buttonsInRowleft--;
             testButtons.add(
-                InlineKeyboardButton.builder()
-                .callbackData("/test " + test.getId())
-                .text(Integer.toString(cnt) + "✅")
-                .build()
-            );
+                    InlineKeyboardButton.builder()
+                            .callbackData("/test " + test.getId())
+                            .text(Integer.toString(cnt) + "✅")
+                            .build());
             if (buttonsInRowleft == 0) {
                 menu.keyboardRow(testButtons);
                 testButtons = new ArrayList<>();
@@ -84,18 +83,16 @@ public class TestsService extends BaseService {
         if (buttonsInRowleft > 0)
             menu.keyboardRow(testButtons);
         menu.keyboardRow(
-            List.of(
-                InlineKeyboardButton.builder()
-                .text("Back to group 👥")
-                .callbackData("/groupinfo").build()
-            )
-        );
+                List.of(
+                        InlineKeyboardButton.builder()
+                                .text("Back to group 👥")
+                                .callbackData("/groupinfo").build()));
         return new Pair(menu.build(), strB.toString());
     }
 
     public void updateTestProperty(Test test, String propertyName, String strVal) throws NoSuchFieldException,
-        IllegalArgumentException,
-        NumberFormatException {
+            IllegalArgumentException,
+            NumberFormatException {
         setNewFieldValueFromString(test, propertyName, strVal);
         repo.updateTest(test);
     }

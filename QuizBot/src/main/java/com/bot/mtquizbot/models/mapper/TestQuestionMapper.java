@@ -17,8 +17,7 @@ public class TestQuestionMapper implements RowMapper<TestQuestion> {
                 rs.getString("answer"),
                 rs.getInt("weight"),
                 rs.getString("text"),
-                rs.getTimestamp("created_ts")
-        );
+                rs.getTimestamp("created_ts"));
         return entity;
     }
 }

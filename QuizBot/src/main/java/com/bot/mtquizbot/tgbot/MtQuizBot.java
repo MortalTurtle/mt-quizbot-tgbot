@@ -1,4 +1,5 @@
 package com.bot.mtquizbot.tgbot;
+
 import java.lang.reflect.InvocationTargetException;
 import java.util.ArrayList;
 import java.util.HashMap;
@@ -34,6 +35,7 @@ import com.bot.mtquizbot.service.UserService;
 
 import jakarta.annotation.PostConstruct;
 import lombok.Getter;
+
 @Component
 @Getter
 public class MtQuizBot extends TelegramLongPollingBot {
@@ -50,14 +52,15 @@ public class MtQuizBot extends TelegramLongPollingBot {
     private final static Integer MAX_BUTTONS_IN_QUESTIONS_MENU_ROW = 6;
     private final static Integer MAX_QUESTIONS_IN_MENU = 20;
     private final static Integer MAX_QUESTIONS_TYPES_IN_MENU_ROW = 3;
+
     public MtQuizBot(TelegramBotsApi telegramBotsApi,
-                     @Value("${telegram.bot.username}") String botUsername,
-                     @Value("${telegram.bot.token}") String botToken,
-                     UserService userService,
-                     GroupService groupService,
-                     RoleService roleService,
-                     TestsService testsService,
-                     TestQuestionService questionService) throws TelegramApiException {
+            @Value("${telegram.bot.username}") String botUsername,
+            @Value("${telegram.bot.token}") String botToken,
+            UserService userService,
+            GroupService groupService,
+            RoleService roleService,
+            TestsService testsService,
+            TestQuestionService questionService) throws TelegramApiException {
         this.botUsername = botUsername;
         this.botToken = botToken;
         this.userService = userService;
@@ -67,9 +70,6 @@ public class MtQuizBot extends TelegramLongPollingBot {
         this.questionsService = questionService;
         telegramBotsApi.registerBot(this);
     }
-
-
-// TODO : fix test pasing if question has to answer
 
     private void sendText(Long who, String what) {
         SendMessage sm = SendMessage.builder()
@@ -82,7 +82,7 @@ public class MtQuizBot extends TelegramLongPollingBot {
         }
     }
 
-    private void sendInlineMenu(Long who, String txt, InlineKeyboardMarkup kb){
+    private void sendInlineMenu(Long who, String txt, InlineKeyboardMarkup kb) {
         SendMessage sm = SendMessage.builder().chatId(who.toString())
                 .parseMode("HTML").text(txt)
                 .replyMarkup(kb).build();
@@ -106,7 +106,7 @@ public class MtQuizBot extends TelegramLongPollingBot {
         var user = query.getFrom();
         var id = user.getId();
         var msgId = query.getMessage().getMessageId();
-        
+
         AnswerCallbackQuery close = AnswerCallbackQuery.builder()
                 .callbackQueryId(query.getId()).build();
         try {
@@ -114,11 +114,11 @@ public class MtQuizBot extends TelegramLongPollingBot {
         } catch (TelegramApiException e) {
             throw new RuntimeException(e);
         }
-    
+
         if (newTxtStr != null) {
             EditMessageText newTxt = EditMessageText.builder()
-                .chatId(id.toString())
-                .messageId(msgId).text(newTxtStr).build();
+                    .chatId(id.toString())
+                    .messageId(msgId).text(newTxtStr).build();
             try {
                 execute(newTxt);
             } catch (TelegramApiException e) {
@@ -160,9 +160,12 @@ public class MtQuizBot extends TelegramLongPollingBot {
             }
             questionText += "\nPlease enter your answer.";
         }
-        if (query != null) buttonTap(query, questionText, keyboard);
-        else if (keyboard != null) sendInlineMenu(user.getLongId(), questionText, keyboard);
-        else sendText(user.getLongId(), questionText);
+        if (query != null)
+            buttonTap(query, questionText, keyboard);
+        else if (keyboard != null)
+            sendInlineMenu(user.getLongId(), questionText, keyboard);
+        else
+            sendText(user.getLongId(), questionText);
         userService.putCurrentQuestionNum(user.getId(), questionIndex);
     }
 
@@ -170,20 +173,19 @@ public class MtQuizBot extends TelegramLongPollingBot {
         var score = userService.getUserScore(user.getId(), testId);
         var test = testsService.getById(testId);
         var scoreString = "Your score is: " + score.toString() + "\n" +
-                          "Min score to pass test: " + test.getMin_score().toString() + "\n" +
-                          (score >= test.getMin_score() ? "You have passed :)" : "You did not pass :(");
+                "Min score to pass test: " + test.getMin_score().toString() + "\n" +
+                (score >= test.getMin_score() ? "You have passed :)" : "You did not pass :(");
         var keyboard = InlineKeyboardMarkup
-                        .builder()
-                        .keyboardRow(List.of(
-                                            InlineKeyboardButton.builder()
-                                            .text("Back to test")
-                                            .callbackData("/test " + testId)
-                                            .build()
-                                        )
-                                    );
+                .builder()
+                .keyboardRow(List.of(
+                        InlineKeyboardButton.builder()
+                                .text("Back to test")
+                                .callbackData("/test " + testId)
+                                .build()));
         if (query == null)
             sendInlineMenu(user.getLongId(), scoreString, keyboard.build());
-        else buttonTap(query, scoreString, keyboard.build());
+        else
+            buttonTap(query, scoreString, keyboard.build());
         userService.putBotState(user.getId(), BotState.idle);
     }
 
@@ -224,14 +226,15 @@ public class MtQuizBot extends TelegramLongPollingBot {
         for (var method : methods) {
             boolean hasCommand = method.isAnnotationPresent(CommandAction.class);
             boolean hasActionByState = method.isAnnotationPresent(StateAction.class);
-            if ((hasCommand || hasActionByState) && 
-                method.getReturnType().equals(Void.TYPE) &&
-                method.getParameterCount() == 1 &&
-                method.getParameters()[0].getType().equals(Update.class)) {
+            if ((hasCommand || hasActionByState) &&
+                    method.getReturnType().equals(Void.TYPE) &&
+                    method.getParameterCount() == 1 &&
+                    method.getParameters()[0].getType().equals(Update.class)) {
                 method.setAccessible(true);
-                Consumer<Update> consumer= (Update upd) -> {
-                    try { method.invoke(this,upd); }
-                    catch (IllegalAccessException | InvocationTargetException e) {
+                Consumer<Update> consumer = (Update upd) -> {
+                    try {
+                        method.invoke(this, upd);
+                    } catch (IllegalAccessException | InvocationTargetException e) {
                         throw new RuntimeException(e);
                     }
                 };
@@ -280,7 +283,7 @@ public class MtQuizBot extends TelegramLongPollingBot {
             return;
         }
         userService.putBotState(Long.toString(id), BotState.waitingForGroupDescription);
-        userService.putIntermediateVar(Long.toString(id),IntermediateVariable.GROUP_NAME, msg.getText());
+        userService.putIntermediateVar(Long.toString(id), IntermediateVariable.GROUP_NAME, msg.getText());
         sendText(id, "Please enter group description");
     }
 
@@ -294,8 +297,8 @@ public class MtQuizBot extends TelegramLongPollingBot {
         }
         userService.putBotState(Long.toString(id), BotState.idle);
         var group = groupService.create(
-            userService.getIntermediateVarString(Long.toString(id),IntermediateVariable.GROUP_NAME),
-            msg.getText());
+                userService.getIntermediateVarString(Long.toString(id), IntermediateVariable.GROUP_NAME),
+                msg.getText());
         userService.updateGroupById(id, group.getId());
         roleService.addUserRole(group, userService.getById(id), GroupRole.Owner);
         actionByCommand.get("/groupinfo").accept(update);
@@ -309,7 +312,7 @@ public class MtQuizBot extends TelegramLongPollingBot {
             sendText(id, "No text for test name");
             return;
         }
-        userService.putIntermediateVar(Long.toString(id),IntermediateVariable.TEST_NAME, msg.getText());
+        userService.putIntermediateVar(Long.toString(id), IntermediateVariable.TEST_NAME, msg.getText());
         sendText(id, "Please enter a test description");
         userService.putBotState(Long.toString(id), BotState.waitingForTestDescription);
     }
@@ -324,13 +327,12 @@ public class MtQuizBot extends TelegramLongPollingBot {
         }
         var user = userService.getById(id);
         testsService.create(user,
-            groupService.getUserGroup(user),
-            userService.getIntermediateVarString(user.getId(),IntermediateVariable.TEST_NAME),
-            null,
-            msg.getText()
-        );
+                groupService.getUserGroup(user),
+                userService.getIntermediateVarString(user.getId(), IntermediateVariable.TEST_NAME),
+                null,
+                msg.getText());
         userService.putBotState(Long.toString(id), BotState.idle);
-        sendText(id,"Test created succesefully, go to /tests to add questions to your test");
+        sendText(id, "Test created succesefully, go to /tests to add questions to your test");
     }
 
     @StateAction(BotState.waitingForNewTestProperty)
@@ -342,15 +344,15 @@ public class MtQuizBot extends TelegramLongPollingBot {
             sendText(id, "No text");
             return;
         }
-        var testId = userService.getIntermediateVarString(user.getId(),IntermediateVariable.TEST_TO_EDIT);
-        var property = userService.getIntermediateVarString(user.getId(),IntermediateVariable.TEST_PROPERTY_TO_EDIT);
+        var testId = userService.getIntermediateVarString(user.getId(), IntermediateVariable.TEST_TO_EDIT);
+        var property = userService.getIntermediateVarString(user.getId(), IntermediateVariable.TEST_PROPERTY_TO_EDIT);
         var test = testsService.getById(testId);
-        if (test == null ) {
+        if (test == null) {
             userService.putBotState(user.getId(), BotState.idle);
             sendText(user.getLongId(), "No test found, try againg :(");
         }
         try {
-            testsService.updateTestProperty(test, property , msg.getText());
+            testsService.updateTestProperty(test, property, msg.getText());
             if (test.getMin_score() < 0)
                 throw new NegativeNumberException("");
         } catch (NumberFormatException e) {
@@ -364,8 +366,8 @@ public class MtQuizBot extends TelegramLongPollingBot {
         }
         var updatedTest = testsService.getById(testId);
         sendInlineMenu(id,
-            testsService.getTestFullDescription(test) ,
-            testsService.getEditMenu(updatedTest));
+                testsService.getTestFullDescription(test),
+                testsService.getEditMenu(updatedTest));
         userService.putBotState(user.getId(), BotState.idle);
     }
 
@@ -379,15 +381,14 @@ public class MtQuizBot extends TelegramLongPollingBot {
             return;
         }
         var questionText = msg.getText();
-        var testId = userService.getIntermediateVarString(user.getId(),IntermediateVariable.TEST_TO_EDIT);
-        var questionType = userService.getIntermediateVarString(user.getId(),IntermediateVariable.QUESTION_TYPE);
-        var question = questionsService.addQuestion(testId ,questionType, 0, questionText);
+        var testId = userService.getIntermediateVarString(user.getId(), IntermediateVariable.TEST_TO_EDIT);
+        var questionType = userService.getIntermediateVarString(user.getId(), IntermediateVariable.QUESTION_TYPE);
+        var question = questionsService.addQuestion(testId, questionType, 0, questionText);
         userService.putBotState(Long.toString(id), BotState.idle);
         var questions = questionsService.getQuestionsByTestId(question.getTestId(), 0, MAX_QUESTIONS_IN_MENU);
         sendInlineMenu(user.getLongId(),
-            questionsService.getQuestionDescriptionMessage(questions),
-            questionsService.getQuestionsMenuBuilder(questions, MAX_BUTTONS_IN_QUESTIONS_MENU_ROW).build()
-        );
+                questionsService.getQuestionDescriptionMessage(questions),
+                questionsService.getQuestionsMenuBuilder(questions, MAX_BUTTONS_IN_QUESTIONS_MENU_ROW).build());
     }
 
     @StateAction(BotState.waitingForNewQuestionProperty)
@@ -400,13 +401,14 @@ public class MtQuizBot extends TelegramLongPollingBot {
             return;
         }
         var propertyVal = msg.getText();
-        var questionId = userService.getIntermediateVarString(user.getId(),IntermediateVariable.QUESTION_TO_EDIT);
+        var questionId = userService.getIntermediateVarString(user.getId(), IntermediateVariable.QUESTION_TO_EDIT);
         var question = questionsService.getQuestionById(questionId);
         if (question == null) {
-            sendText(user.getLongId(), "Ooops... somethig went wrong :(" );
+            sendText(user.getLongId(), "Ooops... somethig went wrong :(");
             return;
         }
-        var questionFieldName = userService.getIntermediateVarString(user.getId(),IntermediateVariable.QUESTION_PROPERTY_TO_EDIT);
+        var questionFieldName = userService.getIntermediateVarString(user.getId(),
+                IntermediateVariable.QUESTION_PROPERTY_TO_EDIT);
         try {
             questionsService.updateQuestionProperty(question, questionFieldName, propertyVal);
             if (question.getWeight() < 0)
@@ -433,7 +435,7 @@ public class MtQuizBot extends TelegramLongPollingBot {
             return;
         }
         var ans = msg.getText();
-        var questionId = userService.getIntermediateVarString(user.getId(),IntermediateVariable.QUESTION_TO_EDIT);
+        var questionId = userService.getIntermediateVarString(user.getId(), IntermediateVariable.QUESTION_TO_EDIT);
         questionsService.addFalseAnswer(questionsService.getQuestionById(questionId), ans);
         var question = questionsService.getQuestionById(questionId);
         var msgstrB = new StringBuilder();
@@ -442,29 +444,27 @@ public class MtQuizBot extends TelegramLongPollingBot {
         msgstrB.append(questionsService.getFalseAnswersString(question));
         userService.putBotState(Long.toString(id), BotState.idle);
         sendInlineMenu(
-            user.getLongId(), msgstrB.toString(),
-            questionsService.getFalseAnswersMenu(questionId).build()
-        );
+                user.getLongId(), msgstrB.toString(),
+                questionsService.getFalseAnswersMenu(questionId).build());
     }
-
 
     @StateAction(BotState.waitingForQuestionsAnswer)
     private void botWaitingForQuestionsAnswer(Update update) {
         var msg = update.getMessage();
         var user = userService.getById(msg.getFrom().getId());
         var questionIndex = userService.getCurrentQuestionNum(user.getId());
-        var questionId = userService.getQuestionId(user.getId(),questionIndex);
+        var questionId = userService.getQuestionId(user.getId(), questionIndex);
         var question = questionsService.getQuestionById(questionId);
-        if (!msg.hasText()){
+        if (!msg.hasText()) {
             sendText(user.getLongId(), "No text in message, please write your answer");
             return;
         }
-        if (question.getAnswer().toLowerCase().equals(msg.getText().toLowerCase())){
+        if (question.getAnswer().toLowerCase().equals(msg.getText().toLowerCase())) {
             userService.putUserScore(user.getId(),
-                                    question.getTestId(),
-                                    userService.getUserScore(user.getId(),
-                                                            question.getTestId())
-                                    + question.getWeight());
+                    question.getTestId(),
+                    userService.getUserScore(user.getId(),
+                            question.getTestId())
+                            + question.getWeight());
         }
         handleQuestionWhileTestPassing(null, user, questionIndex + 1);
     }
@@ -485,31 +485,31 @@ public class MtQuizBot extends TelegramLongPollingBot {
             sendText(id, "Warning: you will leave your current group");
         sendText(id, "Please enter a group code ");
     }
-    
+
     @CommandAction("/start")
     private void startCommand(Update update) {
         var id = update.getMessage().getFrom().getId();
         var user = userService.getById(id);
         var group = groupService.getUserGroup(user);
-        var textMsg = "" + 
-        "Welcome to bot, enter command /join to join group " +
-        "\n /creategroup to create one";
+        var textMsg = "" +
+                "Welcome to bot, enter command /join to join group " +
+                "\n /creategroup to create one";
         if (group != null)
             textMsg += "\nYou have a group :), type /groupinfo to see info";
         var joinButton = InlineKeyboardButton.builder()
-        .text("Join 👥")
-        .callbackData("/join")
-        .build();
+                .text("Join 👥")
+                .callbackData("/join")
+                .build();
         var createButton = InlineKeyboardButton.builder()
-        .text("Create 👤")
-        .callbackData("/creategroup")
-        .build();
+                .text("Create 👤")
+                .callbackData("/creategroup")
+                .build();
         var menu = InlineKeyboardMarkup.builder()
-        .keyboardRow(List.of(joinButton,createButton))
-        .build();
-        sendInlineMenu(id, textMsg , menu);
+                .keyboardRow(List.of(joinButton, createButton))
+                .build();
+        sendInlineMenu(id, textMsg, menu);
     }
-    
+
     @CommandAction("/groupinfo")
     private void groupInfoCommand(Update update) {
         var id = update.getMessage().getFrom().getId();
@@ -517,31 +517,32 @@ public class MtQuizBot extends TelegramLongPollingBot {
         var group = groupService.getUserGroup(user);
         if (group == null) {
             sendText(id, "No group found, please enter /join to enter a group or" +
-            "\n /creategroup to create one");
+                    "\n /creategroup to create one");
             return;
         }
         var role = roleService.getUserRole(user, group);
         var testsButton = InlineKeyboardButton.builder()
-        .text("Tests 🔴")
-        .callbackData("/tests")
-        .build();
+                .text("Tests 🔴")
+                .callbackData("/tests")
+                .build();
         var createTestButton = InlineKeyboardButton.builder()
-        .text("Create test ✅")
-        .callbackData("/createtest")
-        .build();
+                .text("Create test ✅")
+                .callbackData("/createtest")
+                .build();
         var menu = InlineKeyboardMarkup.builder();
         menu.keyboardRow(List.of(testsButton));
         if (role == GroupRole.Owner || role == GroupRole.Contributor)
             menu.keyboardRow(List.of(createTestButton));
-        var groupMsg = "Your group: " + 
-        group.getName() + 
-        " - " +
-        group.getDescription() + 
-        "\nWas created, its ID is\n" + group.getId() + 
-        "\nPlease write it down";
+        var groupMsg = "Your group: " +
+                group.getName() +
+                " - " +
+                group.getDescription() +
+                "\nWas created, its ID is\n" + group.getId() +
+                "\nPlease write it down";
         if (!update.hasCallbackQuery())
             sendInlineMenu(id, groupMsg, menu.build());
-        else buttonTap(update.getCallbackQuery(), groupMsg, menu.build());
+        else
+            buttonTap(update.getCallbackQuery(), groupMsg, menu.build());
     }
 
     @CommandAction("/tests")
@@ -551,15 +552,17 @@ public class MtQuizBot extends TelegramLongPollingBot {
         var group = groupService.getUserGroup(user);
         if (group == null) {
             sendText(id, "No group found, please enter /join to enter a group or" +
-            "\n /creategroup to create one");
+                    "\n /creategroup to create one");
             return;
         }
-        var testsDescriptionWithMenu = testsService.getGroupTestsMenuWithDescription(group, MAX_TEST_BUTTONS_IN_TESTS_MENU_ROW);
+        var testsDescriptionWithMenu = testsService.getGroupTestsMenuWithDescription(group,
+                MAX_TEST_BUTTONS_IN_TESTS_MENU_ROW);
         var msg = testsDescriptionWithMenu.getSecond();
         var menu = testsDescriptionWithMenu.getFirst();
         if (!update.hasCallbackQuery())
             sendInlineMenu(id, msg, menu);
-        else buttonTap(update.getCallbackQuery(), msg, menu);
+        else
+            buttonTap(update.getCallbackQuery(), msg, menu);
     }
 
     @CommandAction("/createtest")
@@ -569,7 +572,7 @@ public class MtQuizBot extends TelegramLongPollingBot {
         var group = groupService.getUserGroup(user);
         if (group == null) {
             sendText(id, "No group found, please enter /join to enter a group or" +
-            "\n /creategroup to create one");
+                    "\n /creategroup to create one");
             return;
         }
         var role = roleService.getUserRole(user, group);
@@ -581,6 +584,7 @@ public class MtQuizBot extends TelegramLongPollingBot {
         sendText(id, "Please enter a test name");
     }
 
+    // /test [testId]
     @CommandAction("/test")
     private void testMenuCommand(Update update) {
         if (!update.hasCallbackQuery())
@@ -599,30 +603,29 @@ public class MtQuizBot extends TelegramLongPollingBot {
         var role = roleService.getUserRole(user, group);
         var menu = InlineKeyboardMarkup.builder();
         var startButton = InlineKeyboardButton.builder()
-            .callbackData("/starttest " + test.getId())
-            .text("Start test 🎓").build();
+                .callbackData("/starttest " + test.getId())
+                .text("Start test 🎓").build();
         menu.keyboardRow(List.of(startButton));
         if (role == GroupRole.Owner ||
-            role == GroupRole.Contributor && 
-            test.getOwner_id().equals(user.getId())) {
+                role == GroupRole.Contributor &&
+                        test.getOwner_id().equals(user.getId())) {
             var editButton = InlineKeyboardButton.builder()
-            .callbackData("/edittest " + test.getId())
-            .text("Edit 📝").build();
+                    .callbackData("/edittest " + test.getId())
+                    .text("Edit 📝").build();
             menu.keyboardRow(List.of(editButton));
         }
         menu.keyboardRow(
-            List.of(
-                InlineKeyboardButton.builder()
-                .text("Back 📍")
-                .callbackData("/tests").build()
-            )
-        );
+                List.of(
+                        InlineKeyboardButton.builder()
+                                .text("Back 📍")
+                                .callbackData("/tests").build()));
         buttonTap(query,
-            testsService.getTestFullDescription(test),
-            menu.build());
+                testsService.getTestFullDescription(test),
+                menu.build());
     }
 
     // args: [testId]
+    // TODO: make func smaller
     @CommandAction("/starttest")
     private void startPassingTestMenuCommand(Update update) {
         if (!update.hasCallbackQuery()) {
@@ -638,9 +641,26 @@ public class MtQuizBot extends TelegramLongPollingBot {
             return;
         }
         var questions = questionsService.getQuestionsByTestId(test.getId(), 0, Integer.MAX_VALUE);
-        if (questions == null) {
+        if (questions == null || questions.size() == 0) {
             sendText(user.getLongId(), "There are no questions in the test.");
             return;
+        }
+        // TODO: maybe move to another function and write according exception
+        for (int i = 0; i < questions.size(); i++) {
+            if (questions.get(i).getAnswer() == null) {
+                var keyboard = InlineKeyboardMarkup.builder()
+                        .keyboardRow(List.of(InlineKeyboardButton.builder()
+                                .text("Back to test")
+                                .callbackData("/test " + testId)
+                                .build()))
+                        .build();
+                buttonTap(query,
+                        "Question number: " +
+                                Integer.toString(i) +
+                                " has no answer, please contact group admin for more information",
+                        keyboard);
+                return;
+            }
         }
         var group = groupService.getById(test.getGroup_id());
         if (!group.getId().equals(user.getGroup_id())) {
@@ -654,12 +674,12 @@ public class MtQuizBot extends TelegramLongPollingBot {
 
     // args [answerOnPrevQuestion]
     @CommandAction("/continuetest")
-    private void continueTest(Update update){
+    private void continueTest(Update update) {
         var query = update.getCallbackQuery();
         if (!update.hasCallbackQuery()) {
             return;
         }
-        
+
         var args = query.getData().split(" ");
         var user = userService.getById(query.getFrom().getId());
         var questionIndex = userService.getCurrentQuestionNum(user.getId());
@@ -667,16 +687,16 @@ public class MtQuizBot extends TelegramLongPollingBot {
         var questionId = userService.getQuestionId(user.getId(), questionIndex);
         var question = questionsService.getQuestionById(questionId);
         var correctAnswer = question.getAnswer();
-        if(answerOnPrevQuestion.toLowerCase().equals(correctAnswer.toLowerCase())){
+        if (answerOnPrevQuestion.toLowerCase().equals(correctAnswer.toLowerCase())) {
             userService.putUserScore(user.getId(),
-                                    question.getTestId(),
-                                    userService.getUserScore(user.getId(),
-                                                            question.getTestId())
-                                    + question.getWeight());
+                    question.getTestId(),
+                    userService.getUserScore(user.getId(),
+                            question.getTestId())
+                            + question.getWeight());
         }
         handleQuestionWhileTestPassing(query, user, questionIndex + 1);
     }
-    
+
     @CommandAction("/edittest")
     private void editTestMenuCommand(Update update) {
         if (!update.hasCallbackQuery())
@@ -697,14 +717,14 @@ public class MtQuizBot extends TelegramLongPollingBot {
         }
         var role = roleService.getUserRole(user, group);
         if (role == GroupRole.Participant ||
-            role == GroupRole.Contributor &&
-            !test.getOwner_id().equals(user.getId())) {
+                role == GroupRole.Contributor &&
+                        !test.getOwner_id().equals(user.getId())) {
             sendText(user.getLongId(), "You have no rights to edit this test, sry I guess :(");
             return;
         }
         buttonTap(query,
-            testsService.getTestFullDescription(test),
-            testsService.getEditMenu(test));
+                testsService.getTestFullDescription(test),
+                testsService.getEditMenu(test));
     }
 
     @CommandAction("/ststfield")
@@ -726,15 +746,15 @@ public class MtQuizBot extends TelegramLongPollingBot {
             sendText(user.getLongId(), "You are not a part of this group, sry I guess :(");
         var role = roleService.getUserRole(user, group);
         if (role == GroupRole.Participant ||
-            role == GroupRole.Contributor &&
-            !test.getOwner_id().equals(user.getId())) {
+                role == GroupRole.Contributor &&
+                        !test.getOwner_id().equals(user.getId())) {
             sendText(user.getLongId(), "You have no rights to edit this test, sry I guess :(");
             return;
         }
         var property = args[2];
         userService.putBotState(user.getId(), BotState.waitingForNewTestProperty);
-        userService.putIntermediateVar(user.getId(),IntermediateVariable.TEST_TO_EDIT, test.getId());
-        userService.putIntermediateVar(user.getId(),IntermediateVariable.TEST_PROPERTY_TO_EDIT, property);
+        userService.putIntermediateVar(user.getId(), IntermediateVariable.TEST_TO_EDIT, test.getId());
+        userService.putIntermediateVar(user.getId(), IntermediateVariable.TEST_PROPERTY_TO_EDIT, property);
         sendText(user.getLongId(), "Please enter new property value");
     }
 
@@ -756,40 +776,39 @@ public class MtQuizBot extends TelegramLongPollingBot {
         var questions = questionsService.getQuestionsByTestId(test.getId(), offset, MAX_QUESTIONS_IN_MENU);
         var menu = questionsService.getQuestionsMenuBuilder(questions, MAX_BUTTONS_IN_QUESTIONS_MENU_ROW);
         var nextPageButton = InlineKeyboardButton.builder()
-            .text("⏩")
-            .callbackData("/editquestions " + test.getId() + " " + Integer.toString(offset + MAX_QUESTIONS_IN_MENU))
-            .build();
+                .text("⏩")
+                .callbackData("/editquestions " + test.getId() + " " + Integer.toString(offset + MAX_QUESTIONS_IN_MENU))
+                .build();
         List<InlineKeyboardButton> list = new ArrayList<>();
         if (hasOffsetParameter) {
             var prevPageButton = InlineKeyboardButton.builder()
-                .text("⏪")
-                .callbackData("editquestions " + 
-                    test.getId() + 
-                    (offset == MAX_QUESTIONS_IN_MENU ? "" : " " + Integer.toString(offset - MAX_QUESTIONS_IN_MENU)))
-                .build();
+                    .text("⏪")
+                    .callbackData("editquestions " +
+                            test.getId() +
+                            (offset == MAX_QUESTIONS_IN_MENU ? ""
+                                    : " " + Integer.toString(offset - MAX_QUESTIONS_IN_MENU)))
+                    .build();
             list.add(prevPageButton);
         }
         if (questions.size() == MAX_QUESTIONS_IN_MENU)
             list.add(nextPageButton);
         menu.keyboardRow(list);
         var addQuestionButton = InlineKeyboardButton.builder()
-            .text("Add ❓")
-            .callbackData("/addquestion " + testId)
-            .build();
+                .text("Add ❓")
+                .callbackData("/addquestion " + testId)
+                .build();
         menu.keyboardRow(List.of(addQuestionButton));
         var textMsg = questionsService.getQuestionDescriptionMessage(questions);
         if (textMsg.equals(""))
             textMsg = "No questions found, maybe add some ^-^";
         menu.keyboardRow(
-            List.of(
-                InlineKeyboardButton.builder()
-                .text("Back to test 📍")
-                .callbackData("/edittest " + testId).build()
-            )
-        );
+                List.of(
+                        InlineKeyboardButton.builder()
+                                .text("Back to test 📍")
+                                .callbackData("/edittest " + testId).build()));
         buttonTap(query,
-            textMsg,
-            menu.build());
+                textMsg,
+                menu.build());
     }
 
     @CommandAction("/editquestion")
@@ -807,12 +826,10 @@ public class MtQuizBot extends TelegramLongPollingBot {
         }
         var menuB = questionsService.getQuestionEditMenu(question);
         buttonTap(query,
-            questionsService.getQuestionDescriptionMessage(question),
-            menuB.build()
-        );
+                questionsService.getQuestionDescriptionMessage(question),
+                menuB.build());
     }
-    
-   
+
     @CommandAction("/setqfield")
     private void editQuestion(Update update) {
         if (!update.hasCallbackQuery())
@@ -828,8 +845,8 @@ public class MtQuizBot extends TelegramLongPollingBot {
         }
         var field = args[2];
         deleteMsg(user.getLongId(), query.getMessage().getMessageId());
-        userService.putIntermediateVar(user.getId(),IntermediateVariable.QUESTION_PROPERTY_TO_EDIT, field);
-        userService.putIntermediateVar(user.getId(),IntermediateVariable.QUESTION_TO_EDIT, questionId);
+        userService.putIntermediateVar(user.getId(), IntermediateVariable.QUESTION_PROPERTY_TO_EDIT, field);
+        userService.putIntermediateVar(user.getId(), IntermediateVariable.QUESTION_TO_EDIT, questionId);
         sendText(user.getLongId(), "Please enter a new value");
         userService.putBotState(user.getId(), BotState.waitingForNewQuestionProperty);
     }
@@ -870,9 +887,8 @@ public class MtQuizBot extends TelegramLongPollingBot {
         deleteMsg(user.getLongId(), query.getMessage().getMessageId());
         sendText(user.getLongId(), "Enter new false qustion");
         userService.putBotState(user.getId(), BotState.waitingForNewFalseAnswer);
-        userService.putIntermediateVar(user.getId(),IntermediateVariable.QUESTION_TO_EDIT, questionId);
+        userService.putIntermediateVar(user.getId(), IntermediateVariable.QUESTION_TO_EDIT, questionId);
     }
-
 
     @CommandAction("/addquestion")
     private void addTestQuestion(Update update) {
@@ -889,9 +905,9 @@ public class MtQuizBot extends TelegramLongPollingBot {
         }
         var types = questionsService.getQuestionTypeList();
         var menu = questionsService.getQuestionTypeMenuBuilder(
-            types,
-            MAX_QUESTIONS_TYPES_IN_MENU_ROW);
-        userService.putIntermediateVar(user.getId(),IntermediateVariable.TEST_TO_EDIT, test.getId());
+                types,
+                MAX_QUESTIONS_TYPES_IN_MENU_ROW);
+        userService.putIntermediateVar(user.getId(), IntermediateVariable.TEST_TO_EDIT, test.getId());
         buttonTap(query, questionsService.getQuestionTypeDescriptionMessage(types), menu.build());
     }
 
@@ -913,6 +929,7 @@ public class MtQuizBot extends TelegramLongPollingBot {
     public String getBotUsername() {
         return botUsername;
     }
+
     @Override
     public String getBotToken() {
         return botToken;

@@ -20,9 +20,11 @@ public class RoleService extends BaseService {
 
     private HashMap<String, GroupRole> nameToRole = null;
     private HashMap<GroupRole, RoleDb> enumToRoleDb = null;
+
     public RoleService(IRoleRepository repo) {
         this.repo = repo;
     }
+
     private void ConfigureMaps() {
         nameToRole = new HashMap<>();
         nameToRole.put("Owner", GroupRole.Owner);
@@ -33,9 +35,8 @@ public class RoleService extends BaseService {
         var roles = repo.getRoleList();
         for (var role : roles)
             enumToRoleDb.put(
-                nameToRole.get(role.getName()),
-                role
-            );
+                    nameToRole.get(role.getName()),
+                    role);
     }
 
     public GroupRole getById(String id) {
@@ -45,7 +46,7 @@ public class RoleService extends BaseService {
             ConfigureMaps();
         return nameToRole.get(role.getName());
     }
-    
+
     public List<RoleDb> getRoleDbList() {
         log.trace("#### getRoleList() - working");
         return repo.getRoleList();

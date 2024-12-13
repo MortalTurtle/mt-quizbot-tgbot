@@ -17,8 +17,7 @@ public class TestMapper implements RowMapper<Test> {
                 rs.getString("name"),
                 rs.getInt("min_score"),
                 rs.getString("description"),
-                rs.getTimestamp("created_ts")
-        );
+                rs.getTimestamp("created_ts"));
         return entity;
     }
 }
